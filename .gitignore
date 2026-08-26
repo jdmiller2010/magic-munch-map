@@ -1,0 +1,3 @@
+# HAR captures record full sessions, cookies and auth headers included.
+# This repo is public; never commit one.
+*.har

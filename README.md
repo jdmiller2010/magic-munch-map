@@ -5,8 +5,9 @@ A one-page static site for planning what to eat at Disneyland and California Adv
 ## Files
 
 - `index.html` — the whole app, including the logo (inline SVG in the app bar). There is no seed data file; the list starts empty and lives in Firestore or your browser.
-- `menu.js` — the menu catalog, generated from a Disney Parks Blog foodie guide
-- `tools/extract_menu.py` — generates it
+- `menu.js` — seasonal items from a Disney Parks Blog foodie guide, with photos
+- `dining.js` — every venue's full menu, prices and hours, plus venue positions
+- `tools/extract_menu.py` / `tools/refresh_data.py` — generate those two
 - `firebase-config.js` — optional cloud sync config. Null by default; the app works without it.
 - `firestore.rules` — the security rules to paste into the Firebase console.
 - `README.md` — this
@@ -71,11 +72,30 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 - **Signed out**, nothing changes from before: the shared list plus this browser's `localStorage`.
 - Signing in does **not** touch `localStorage`, so signing out returns you to whatever you had before, untouched.
 
+## Using it
+
+**Your list is the point.** Open the app, and List answers "what's on my list, and what's near me?" — tap **Near me** and everything reorders by walking distance with a distance on each card.
+
+**Explore** is the other half: search once across seasonal blog items, every venue's full menu, and the venues themselves. Results show prices and descriptions, and each has an add button. Nothing reaches your list until you tap it.
+
 ## The menu catalog
 
 `menu.js` holds every dish from a Disney Parks Blog foodie guide — name, venue, land, park, description, and a photo. The **Menu** view browses it grouped by land, and the add button on each card is the only way anything enters your list. Nothing is imported wholesale: the catalog is a source, not content. That's deliberate — the app is for the handful of things you actually want, not for every item Disney sells.
 
-Rebuild it when a new guide drops:
+### Refreshing
+
+Two commands, run whenever you want; both write files that get committed.
+
+```
+python3 tools/refresh_data.py > dining.js
+python3 tools/extract_menu.py <guide-url> --season "Halloween 2026" > menu.js
+```
+
+`refresh_data.py` does both halves of the map data in one run: venue positions from OpenStreetMap, then each venue's menu, prices, hours and price range from `disneyland.disney.go.com`. It takes a few minutes and makes about 140 requests, rate-limited. Disney's endpoints send no CORS headers, so this cannot run in the browser — it has to be built and committed. The in-app **Resync map data** button refreshes the OpenStreetMap half, which *is* browser-callable.
+
+The last run produced 86 venues, 4,020 menu items (2,672 with prices) and hours for 55 venues. That is 1.1MB of JSON, 83KB over the wire once GitHub Pages gzips it.
+
+Rebuild the seasonal guide when a new one drops:
 
 ```
 python3 tools/extract_menu.py <guide-url> --season "Halloween 2026" > menu.js
