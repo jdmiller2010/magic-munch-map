@@ -322,6 +322,11 @@
   .rate svg{width:14px;height:14px;display:block}
   .rate .off{color:var(--line)}
   .verdict{margin:6px 0 0;font-size:13.5px;color:var(--ink);font-style:italic}
+  .wlink{
+    display:inline-block;margin-top:7px;font-size:12.5px;font-weight:600;
+    color:var(--brand);text-decoration:none
+  }
+  .wlink:hover{text-decoration:underline}
   .seg button{font-size:12.5px}
   .two{display:flex;gap:10px}
   .two .field{flex:1;min-width:0}
@@ -661,6 +666,9 @@
     restaurant:"Table service", fast_food:"Quick service", cafe:"Cafe",
     ice_cream:"Ice cream", bar:"Bar", pub:"Pub", biergarten:"Beer garden"
   };
+  function safeUrl(u){
+    return /^https?:\/\//i.test(String(u || "")) ? String(u) : "";
+  }
   function tidy(str){
     return String(str || "").split(";")[0].replace(/_/g, " ").replace(/^./, function(c){ return c.toUpperCase(); });
   }
@@ -811,6 +819,7 @@
     var bits = [PARKS[p.park], p.land, MEAL_LABEL[p.meal], fmtDate(p.date)].filter(Boolean).join(" · ");
     return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
            (p.note?'<div class="n">'+esc(p.note)+'</div>':'')+
+           (safeUrl(p.website)?'<a class="n" href="'+esc(safeUrl(p.website))+'" target="_blank" rel="noopener noreferrer">Menu \u2197</a>':'')+
            (p.must?'<div class="g">Must do</div>':'')+'</div>';
   }
 
@@ -1105,6 +1114,20 @@
       n.className = "note";
       n.textContent = p.note;
       body.appendChild(n);
+    }
+
+    var url = safeUrl(p.website);
+    if(url){
+      var a = document.createElement("a");
+      a.className = "wlink";
+      a.href = url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      // Disney publishes no deep link into mobile ordering - their universal
+      // link manifest claims only /passes/renew/ - so this is the dining page,
+      // which is where the menu and the mobile-order button live.
+      a.textContent = p.mobile ? "Menu & mobile order \u2197" : "Menu \u2197";
+      body.appendChild(a);
     }
 
     if(p.verdict){
