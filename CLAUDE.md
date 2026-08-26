@@ -68,6 +68,12 @@ Venues carry more than a name: `amenity` (100% coverage — this is what disting
 
 OSM knows nothing about Disney "lands", so `land` stays a manual choice from `LANDS`.
 
+### The focus mask
+
+`drawFocus()` veils everything outside the selected zones so the eye lands where the food is. The rings are **not** park boundaries — they are convex hulls of each zone's venue positions, pushed out 110m and corner-cut twice with Chaikin. That was originally a fallback when Overpass was unreachable, but it is the better source anyway: it follows where venues actually are and updates whenever the venue data does.
+
+Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` punches the rings out as holes. The softness comes from `filter: blur(9px)` on the veil itself, which turns each hole edge into a gradient rather than a cut — cheaper and far more robust than blurring map tiles, which would need a second clipped tile layer re-projected on every zoom.
+
 ### Catalogs, and the shape of the app
 
 **The to-do list is the product.** Everything else is a way to get things onto it. Three catalogs feed it, and all three follow the same rule: **a source, never content**. Nothing reaches `places` until the user taps add.

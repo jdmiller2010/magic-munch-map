@@ -120,6 +120,18 @@
     border:1px solid var(--line);box-shadow:var(--shadow);background:var(--surface-2)
   }
   .leaflet-container{font-family:"Inter",sans-serif;border-radius:var(--r-lg)}
+  /* The blur is on the veil itself, which softens the hole edges into a
+     gradient instead of a hard cut. */
+  .focusmask{
+    fill:#132033;fill-opacity:.5;pointer-events:none;
+    filter:blur(9px);stroke-linejoin:round
+  }
+  @media (prefers-color-scheme:dark){
+    .focusmask{fill:#000a14;fill-opacity:.62}
+  }
+  @media (prefers-reduced-motion:reduce){
+    .focusmask{filter:blur(4px)}
+  }
   .leaflet-popup-content-wrapper{border-radius:var(--r-md);box-shadow:var(--shadow-lg)}
 
   /* filters */
@@ -927,6 +939,94 @@
   }).addTo(map);
   map.setMaxBounds([[33.798,-117.933],[33.822,-117.905]]);
 
+  /* ---------- focus mask ----------
+     Everything outside the selected zones gets veiled so the eye lands where
+     the food is. The rings come from the venue positions rather than the park
+     boundary: they follow where things actually are, and they update whenever
+     the venue data does. Precision is not the point - the edge is blurred and
+     spilling over a little is fine. */
+
+  var MASK_BOUNDS = [[33.788, -117.960], [33.836, -117.880]];   // covers any pannable view
+  var focusLayer = null;
+
+  function convexHull(pts){
+    if(pts.length < 3) return pts.slice();
+    var p = pts.slice().sort(function(a, b){ return a.lng - b.lng || a.lat - b.lat; });
+    function cross(o, a, b){
+      return (a.lng - o.lng) * (b.lat - o.lat) - (a.lat - o.lat) * (b.lng - o.lng);
+    }
+    var lower = [], i;
+    for(i = 0; i < p.length; i++){
+      while(lower.length >= 2 && cross(lower[lower.length - 2], lower[lower.length - 1], p[i]) <= 0) lower.pop();
+      lower.push(p[i]);
+    }
+    var upper = [];
+    for(i = p.length - 1; i >= 0; i--){
+      while(upper.length >= 2 && cross(upper[upper.length - 2], upper[upper.length - 1], p[i]) <= 0) upper.pop();
+      upper.push(p[i]);
+    }
+    lower.pop(); upper.pop();
+    return lower.concat(upper);
+  }
+
+  // Venues sit inside the park, so the hull has to be pushed outward to reach
+  // anything like the real footprint.
+  function expandRing(pts, metres){
+    var cy = 0, cx = 0;
+    pts.forEach(function(p){ cy += p.lat; cx += p.lng; });
+    cy /= pts.length; cx /= pts.length;
+    var dLat = metres / 111320;
+    var dLng = dLat / Math.max(0.2, Math.cos(cy * Math.PI / 180));
+    return pts.map(function(p){
+      var vy = p.lat - cy, vx = p.lng - cx;
+      var len = Math.sqrt(vy * vy + vx * vx) || 1;
+      return { lat: p.lat + (vy / len) * dLat, lng: p.lng + (vx / len) * dLng };
+    });
+  }
+
+  // Chaikin corner cutting: two passes turns a blocky hull into soft curves.
+  function roundRing(pts, passes){
+    var out = pts;
+    for(var n = 0; n < passes; n++){
+      var next = [];
+      for(var i = 0; i < out.length; i++){
+        var a = out[i], b = out[(i + 1) % out.length];
+        next.push({ lat: a.lat * 0.75 + b.lat * 0.25, lng: a.lng * 0.75 + b.lng * 0.25 });
+        next.push({ lat: a.lat * 0.25 + b.lat * 0.75, lng: a.lng * 0.25 + b.lng * 0.75 });
+      }
+      out = next;
+    }
+    return out;
+  }
+
+  function focusRings(){
+    var rings = [];
+    Object.keys(state.parks).forEach(function(k){
+      if(!state.parks[k]) return;
+      var pts = [];
+      venues.forEach(function(v){ if(v.park === k) pts.push({ lat: v.lat, lng: v.lng }); });
+      if(pts.length < 3) return;
+      var ring = roundRing(expandRing(convexHull(pts), 110), 2);
+      rings.push(ring.map(function(p){ return [p.lat, p.lng]; }));
+    });
+    return rings;
+  }
+
+  function drawFocus(){
+    if(focusLayer){ map.removeLayer(focusLayer); focusLayer = null; }
+    var rings = focusRings();
+    if(!rings.length) return;
+    var outer = [
+      [MASK_BOUNDS[0][0], MASK_BOUNDS[0][1]], [MASK_BOUNDS[0][0], MASK_BOUNDS[1][1]],
+      [MASK_BOUNDS[1][0], MASK_BOUNDS[1][1]], [MASK_BOUNDS[1][0], MASK_BOUNDS[0][1]]
+    ];
+    // Leaflet fills with evenodd, so the extra rings punch holes.
+    focusLayer = L.polygon([outer].concat(rings), {
+      className: "focusmask", stroke: false, interactive: false
+    }).addTo(map);
+    focusLayer.bringToBack();
+  }
+
   function icon(p){
     return L.divIcon({
       className:"",
@@ -1620,6 +1720,7 @@
 
   function render(){
     var shown = places.filter(visible);
+    drawFocus();
     drawMarkers(shown);
     if(state.view === "explore") drawExplore();
     else if(state.view === "time") drawTimeline(shown);
