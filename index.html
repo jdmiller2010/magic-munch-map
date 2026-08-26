@@ -523,6 +523,7 @@
   .pin i{width:9px;height:9px;border-radius:50%;background:#0a4f5e;border:2px solid #fbfdfe;display:block}
   .pin.many{width:32px;height:32px;border-width:3px}
   .pin b{font-family:"Fredoka",sans-serif;font-size:12px;font-weight:700;color:#fff;line-height:1}
+  .pin b.sm{font-size:10px;letter-spacing:-.02em}
   .pin.must{border-color:var(--gold);box-shadow:0 0 0 3px rgba(224,148,0,.3),0 3px 8px rgba(44,35,23,.35)}
   .pop{font-family:"Inter",sans-serif;color:#2c2317}
   .pop b{font-family:"Fredoka",sans-serif;font-size:14.5px;display:block;line-height:1.3}
@@ -1393,7 +1394,9 @@
 
   function icon(p, count){
     var big = count > 1;
-    var inner = big ? '<b>' + (count > 99 ? "99+" : count) + '</b>' : '<i></i>';
+    var wide = count > 99;
+    var inner = big ? '<b' + (wide ? ' class="sm"' : '') + '>' +
+                      (count > 999 ? "999+" : count) + '</b>' : '<i></i>';
     return L.divIcon({
       className:"",
       html:'<div class="pin' + (p.must ? " must" : "") + (big ? " many" : "") +
@@ -1786,14 +1789,13 @@
       });
     }
 
-    /* Rendering four thousand cards on a phone is not viable, so the list is
-       capped - but never silently. Each section reports what it is holding
-       back, and "Show more" raises the ceiling. */
-    var grow = state.more * 400;
-    var caps = { seasonal:150 + grow, menu:350 + grow, spots:60 + grow };
-    var out = seasonal.slice(0, caps.seasonal)
-                .concat(menu.slice(0, caps.menu))
-                .concat(spots.slice(0, caps.spots));
+    /* Everything that matched, uncapped. The cap belongs to card rendering -
+       four thousand DOM nodes on a phone is not viable - and is applied in
+       drawExploreCards. The map must never see the capped list: markers are
+       ~86 points however many dishes sit on them, and counting the visible
+       slice made a pin claim 92 things at a venue that holds 91, while a
+       venue past the cut vanished from the map entirely. */
+    var out = seasonal.concat(menu).concat(spots);
 
     if(state.here){
       out.sort(function(a, b){
@@ -1802,10 +1804,12 @@
         return da - db;
       });
     }
+    var grow = state.more * 400;
     out.totals = { seasonal:seasonal.length, menu:menu.length, spots:spots.length };
-    out.hidden = Math.max(0, seasonal.length - caps.seasonal) +
-                 Math.max(0, menu.length - caps.menu) +
-                 Math.max(0, spots.length - caps.spots);
+    out.caps   = { seasonal:150 + grow, menu:350 + grow, spots:60 + grow };
+    out.hidden = Math.max(0, seasonal.length - out.caps.seasonal) +
+                 Math.max(0, menu.length - out.caps.menu) +
+                 Math.max(0, spots.length - out.caps.spots);
     return out;
   }
 
@@ -1820,19 +1824,20 @@
       host.appendChild(e);
       return;
     }
-    var totals = list.totals || {};
+    var caps = list.caps || { seasonal:1e9, menu:1e9, spots:1e9 };
     var groups = [
-      ["Seasonal", list.filter(function(r){ return r.hit === "dish" && r.m.seasonal; }), totals.seasonal],
-      ["On the menu", list.filter(function(r){ return r.hit === "dish" && !r.m.seasonal; }), totals.menu],
-      ["Places", list.filter(function(r){ return r.hit === "venue"; }), totals.spots]
+      ["Seasonal", list.filter(function(r){ return r.hit === "dish" && r.m.seasonal; }), caps.seasonal],
+      ["On the menu", list.filter(function(r){ return r.hit === "dish" && !r.m.seasonal; }), caps.menu],
+      ["Places", list.filter(function(r){ return r.hit === "venue"; }), caps.spots]
     ];
     groups.forEach(function(g){
       if(!g[1].length) return;
-      // Say "300 of 3,912" rather than just "300", so a cap is never mistaken
+      var slice = g[1].slice(0, g[2]);
+      // Say "350 of 2,488" rather than just "350", so a cap is never mistaken
       // for the whole answer.
-      var label = g[2] && g[2] > g[1].length ? g[1].length + " of " + g[2] : g[1].length;
+      var label = g[1].length > slice.length ? slice.length + " of " + g[1].length : g[1].length;
       var sec = section(host, g[0], label);
-      g[1].forEach(function(r){
+      slice.forEach(function(r){
         sec.appendChild(r.hit === "dish" ? menuCard(r.m, r.owned) : venueCard(r.v, r.owned));
       });
     });
@@ -2237,9 +2242,8 @@
       var hits = exploreList();
       drawMarkers(hits.filter(hasCoords));
       if(state.show === "cards") drawExploreCards(host, hits); else host.innerHTML = "";
-      var total = hits.length + (hits.hidden || 0);
       document.getElementById("count").textContent =
-        total + (total === 1 ? " result" : " results");
+        hits.length + (hits.length === 1 ? " result" : " results");
       renderFilterBadge();
       return;
     }
