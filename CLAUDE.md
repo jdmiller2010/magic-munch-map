@@ -80,6 +80,8 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 ### Catalogs, and the shape of the app
 
+**One marker per location, never one per record.** 4,020 dishes resolve to 55 venues — median 52 per point, worst 270 — so a marker each would stack hundreds invisibly on one pixel. `groupBySpot()` buckets by rounded lat/lng, the pin carries the count, and `spotPopup()` lists what is there with an action per row (Add in Explore, Edit in My list), capped at 12. `markers` is keyed under **every** member of a group so `focus(p)` still finds the pin for a given record, and dragging is disabled on a grouped pin — moving one would move all of them.
+
 **Filters live in one sheet, not a chip strip.** The strip scrolled sideways, so options fell off the edge with nothing indicating they were there — which is why filtering never felt complete. Everything filterable is now in `#filterDlg` under labelled groups (Where / Only show / Meal / Arrange), the sheet hides whichever controls do not apply to the current mode, and the Filters button carries a dot whenever anything is off its default. `activeFilters()` must count every one of them; a filter the badge ignores is a filter the user cannot tell is on.
 
 **The header is a phone budget.** Two sticky rows, about 95px: mark + search + account, then mode + count + Filters (+ the list/map toggle above 700px, where the bottom pill is hidden instead). The old layout spent ~240px before any content. The `<h1>` survives as `.sr` (visually hidden) — the mark carries the identity on screen because a phone cannot spare the row. Group/meal/scope live in a filter sheet, which also shows only the controls that apply to the current mode.

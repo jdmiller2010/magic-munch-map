@@ -523,11 +523,27 @@
   }
   /* every pin is a small character looking back at you */
   .pin i{width:9px;height:9px;border-radius:50%;background:#0a4f5e;border:2px solid #fbfdfe;display:block}
+  .pin.many{width:32px;height:32px;border-width:3px}
+  .pin b{font-family:"Fredoka",sans-serif;font-size:12px;font-weight:700;color:#fff;line-height:1}
   .pin.must{border-color:var(--gold);box-shadow:0 0 0 3px rgba(224,148,0,.3),0 3px 8px rgba(44,35,23,.35)}
   .pop{font-family:"Inter",sans-serif;color:#2c2317}
   .pop b{font-family:"Fredoka",sans-serif;font-size:14.5px;display:block;line-height:1.3}
   .pop .m{font-size:11.5px;color:#756a58;margin-top:2px}
   .pop .n{margin-top:6px;font-size:13px}
+  .pop .stack{max-height:184px;overflow-y:auto;margin-top:7px}
+  .pop .srow{
+    display:flex;align-items:center;gap:7px;padding:6px 0;border-top:1px solid #e5dac6
+  }
+  .pop .srow .nm{flex:1;min-width:0;font-size:12.5px;line-height:1.3;font-weight:600}
+  .pop .srow .pr{font-size:11px;color:#756a58;white-space:nowrap}
+  .pop .more{margin-top:6px;font-style:italic}
+  .popbtn{
+    flex:none;appearance:none;cursor:pointer;font-family:inherit;
+    font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:999px;
+    border:0;background:#0b7789;color:#fff
+  }
+  .popbtn:disabled{background:#e5dac6;color:#756a58;cursor:default}
+  .pop > .popbtn{margin-top:8px}
   .pop .g{display:inline-block;margin-top:7px;background:#e09400;color:#2a2000;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
 
   footer{padding:28px 16px 0;font-size:12px;line-height:1.7;color:var(--muted)}
@@ -1330,11 +1346,16 @@
     focusLayer.bringToBack();
   }
 
-  function icon(p){
+  function icon(p, count){
+    var big = count > 1;
+    var inner = big ? '<b>' + (count > 99 ? "99+" : count) + '</b>' : '<i></i>';
     return L.divIcon({
       className:"",
-      html:'<div class="pin'+(p.must?" must":"")+'" style="background:'+FOOD+'"><i></i></div>',
-      iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-22]
+      html:'<div class="pin' + (p.must ? " must" : "") + (big ? " many" : "") +
+           '" style="background:' + FOOD + '">' + inner + '</div>',
+      iconSize: big ? [32,32] : [26,26],
+      iconAnchor: big ? [16,32] : [13,26],
+      popupAnchor: big ? [0,-27] : [0,-22]
     });
   }
 
@@ -1356,6 +1377,112 @@
            (m.season ? '<div class="g">' + esc(m.season) + '</div>' : '') + '</div>';
   }
 
+  /* 4,000 dishes sit on 55 venues - a marker each would stack hundreds on one
+     point. One marker per location, carrying a count, and the popup says what
+     is actually there. */
+  function spotOf(r){
+    if(r.hit === "dish") return r.m.venue || r.m.dish;
+    if(r.hit === "venue") return r.v.name;
+    return r.venue || r.name;
+  }
+  function nameOf(r){ return r.hit === "dish" ? r.m.dish : r.hit === "venue" ? r.v.name : r.name; }
+  function metaOf(r){
+    if(r.hit === "dish") return [r.m.price, r.m.season || r.m.period].filter(Boolean).join(" \u00b7 ");
+    if(r.hit === "venue") return venueBlurb(r.v);
+    return [r.price, MEAL_LABEL[r.meal], r.must ? "Must do" : ""].filter(Boolean).join(" \u00b7 ");
+  }
+
+  function groupBySpot(list){
+    var by = {}, order = [];
+    list.forEach(function(p){
+      var key = p.lat.toFixed(5) + "," + p.lng.toFixed(5);
+      if(!by[key]){ by[key] = []; order.push(key); }
+      by[key].push(p);
+    });
+    return order.map(function(k){ return by[k]; });
+  }
+
+  var SPOT_MAX = 12;   // a popup listing 270 dishes helps nobody
+
+  function spotPopup(group){
+    var wrap = document.createElement("div");
+    wrap.className = "pop";
+
+    var title = document.createElement("b");
+    title.textContent = group.length > 1 ? spotOf(group[0]) : nameOf(group[0]);
+    wrap.appendChild(title);
+
+    var sub = document.createElement("div");
+    sub.className = "m";
+    sub.textContent = group.length > 1
+      ? group.length + " things here"
+      : [PARKS[group[0].park || (group[0].m && group[0].m.park) || (group[0].v && group[0].v.park)],
+         metaOf(group[0])].filter(Boolean).join(" \u00b7 ");
+    wrap.appendChild(sub);
+
+    if(group.length === 1){
+      var only = group[0];
+      if(!only.hit && only.note){
+        var n = document.createElement("div");
+        n.className = "n";
+        n.textContent = only.note;
+        wrap.appendChild(n);
+      }
+      wrap.appendChild(spotAction(only));
+      return wrap;
+    }
+
+    var stack = document.createElement("div");
+    stack.className = "stack";
+    group.slice(0, SPOT_MAX).forEach(function(r){
+      var row = document.createElement("div");
+      row.className = "srow";
+      var nm = document.createElement("span");
+      nm.className = "nm";
+      nm.textContent = nameOf(r);
+      row.appendChild(nm);
+      var meta = metaOf(r);
+      if(meta){
+        var pr = document.createElement("span");
+        pr.className = "pr";
+        pr.textContent = meta;
+        row.appendChild(pr);
+      }
+      row.appendChild(spotAction(r));
+      stack.appendChild(row);
+    });
+    wrap.appendChild(stack);
+
+    if(group.length > SPOT_MAX){
+      var more = document.createElement("div");
+      more.className = "m more";
+      more.textContent = "and " + (group.length - SPOT_MAX) + " more \u2014 search to narrow it down";
+      wrap.appendChild(more);
+    }
+    return wrap;
+  }
+
+  function spotAction(r){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "popbtn";
+    if(r.hit){
+      if(r.owned){
+        b.disabled = true;
+        b.textContent = "On list";
+      }else{
+        b.textContent = "Add";
+        b.addEventListener("click", function(){
+          if(r.hit === "dish") addMenuItem(r.m); else addVenue(r.v);
+        });
+      }
+    }else{
+      b.textContent = "Edit";
+      b.addEventListener("click", function(){ openDialog(r); });
+    }
+    return b;
+  }
+
   function popupHtml(p){
     var bits = [PARKS[p.park], p.land, MEAL_LABEL[p.meal], fmtDate(p.date)].filter(Boolean).join(" · ");
     return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
@@ -1375,10 +1502,15 @@
   function drawMarkers(shown){
     Object.keys(markers).forEach(function(id){ map.removeLayer(markers[id]); });
     markers = {};
-    shown.filter(hasCoords).forEach(function(p, idx){
-      var draggable = state.moving && state.mode === "mine";
-      var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:draggable,title:p.name});
-      m.bindPopup(p.hit ? hitPopup(p) : popupHtml(p));
+    groupBySpot(shown.filter(hasCoords)).forEach(function(group, idx){
+      var p = group[0];
+      // Dragging one pin that stands for a dozen things would move all of them.
+      var draggable = state.moving && state.mode === "mine" && group.length === 1;
+      var m = L.marker([p.lat,p.lng],{
+        icon:icon(p, group.length), draggable:draggable,
+        title: group.length > 1 ? spotOf(p) + " (" + group.length + ")" : p.name
+      });
+      m.bindPopup(spotPopup(group), { maxWidth:260, minWidth:200 });
       m.on("dragend",function(e){
         var ll = e.target.getLatLng();
         p.lat = +ll.lat.toFixed(5);
@@ -1386,9 +1518,9 @@
         persist(p, ["lat","lng"]);
       });
       m.addTo(map);
-      // Explore hits have no record id; without a fallback key they all land
-      // on markers["undefined"] and only one ever gets removed again.
-      markers[p.id || ("anon-" + idx)] = m;
+      // Keyed under every member, so focus(p) can still find the pin that
+      // represents a given record.
+      group.forEach(function(r, i){ markers[r.id || ("anon-" + idx + "-" + i)] = m; });
     });
   }
 
@@ -2318,7 +2450,8 @@
   });
 
   document.getElementById("chickBtn").addEventListener("click", function(){
-    searchEl.value = "chicken strips, chicken tenders, chicken fingers";
+    // "chicken fenders" is not a typo - it is what Flo's V8 Cafe calls them.
+    searchEl.value = "chicken strips, chicken tenders, chicken fingers, chicken fenders";
     setQuery(searchEl.value);
     state.scope = "all";                       // chicken is a menu thing, not a seasonal one
     document.getElementById("scopePick").value = "all";
