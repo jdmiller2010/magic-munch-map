@@ -65,7 +65,15 @@
     position:sticky;top:0;z-index:600;background:var(--bg);
     border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))
   }
-  .barrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px}
+  .barrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px}
+  .barend{display:flex;align-items:center;gap:8px;flex:none}
+  .acct{
+    appearance:none;cursor:pointer;font-size:12.5px;font-weight:600;white-space:nowrap;
+    padding:6px 12px;border-radius:999px;border:1px solid var(--brand);
+    background:var(--brand);color:var(--on-brand);transition:transform .2s var(--spring)
+  }
+  .acct:active{transform:scale(.95)}
+  .acct.in{background:var(--brand-soft);color:var(--brand);border-color:transparent}
   .appbar h1{font-size:20px}
   .appbar h1 .mm{color:var(--food)}
   .appbar .sub{font-size:12.5px;color:var(--muted);margin-top:1px;font-weight:500}
@@ -119,6 +127,29 @@
   .chip[aria-pressed="true"]{color:var(--surface);border-color:transparent}
   .chip[aria-pressed="true"] .dot{background:currentColor;opacity:.85}
   .chip[data-must][aria-pressed="true"]{background:var(--gold);color:#2a2000;border-color:transparent}
+  .chip[data-park][aria-pressed="true"],
+  .chip[data-meal][aria-pressed="true"]{background:var(--brand);color:var(--on-brand);border-color:transparent}
+  .chip.sep{margin-left:6px;position:relative}
+  .chip.sep::before{content:"";position:absolute;left:-9px;top:6px;bottom:6px;width:1px;background:var(--line)}
+
+  /* view switching */
+  body[data-view="list"] .mapwrap,
+  body[data-view="time"] .mapwrap{display:none}
+  body[data-view="map"] .list{display:none}
+  body[data-view="map"] #map{height:64vh}
+  body[data-view="time"] .chips{padding-bottom:2px}
+
+  /* timeline */
+  .dayhead{
+    display:flex;align-items:baseline;gap:9px;margin:0 2px 4px;
+    padding-bottom:7px;border-bottom:2px solid var(--line)
+  }
+  .dayhead .nm{font-family:"Fredoka",sans-serif;font-weight:600;font-size:16.5px}
+  .dayhead .ct{font-size:11px;font-weight:600;color:var(--muted)}
+  .mealhead{
+    font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;
+    letter-spacing:.08em;margin:15px 2px 8px
+  }
 
   .searchbox{padding:10px 16px 0;position:relative}
   .searchbox svg{position:absolute;left:29px;top:50%;transform:translateY(-45%);color:var(--muted);pointer-events:none}
@@ -163,8 +194,10 @@
     background:var(--surface-2);color:var(--muted)
   }
   .tag.gold{background:var(--gold);color:#2a2000}
+  .tag.meal{background:var(--brand-soft);color:var(--brand)}
+  .tag.nowhere{background:transparent;border:1px dashed var(--line);color:var(--muted)}
   .note{margin:7px 0 0;font-size:13.5px;color:var(--muted);word-wrap:break-word}
-  .acts{display:flex;flex-direction:column;gap:6px;flex:none}
+  .acts{display:grid;grid-template-columns:repeat(2,34px);gap:6px;flex:none}
   .iconbtn{
     appearance:none;width:34px;height:34px;padding:0;cursor:pointer;border-radius:10px;
     border:1px solid var(--line);background:var(--surface);color:var(--muted);
@@ -237,6 +270,8 @@
     border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink)
   }
   .field textarea{resize:vertical;min-height:62px}
+  .two{display:flex;gap:10px}
+  .two .field{flex:1;min-width:0}
   .err{color:var(--food);font-size:13px;font-weight:600;margin:0 0 10px;display:none}
   .row{display:flex;gap:10px;margin-top:16px}
   .row .btn{flex:1;margin:0;text-align:center}
@@ -307,12 +342,15 @@
           <div class="sub">Everything worth eating</div>
         </div>
       </div>
-      <span class="count" id="count">0 places</span>
+      <div class="barend">
+        <span class="count" id="count">0 places</span>
+        <button type="button" class="acct" id="acctBtn" hidden>Sign in</button>
+      </div>
     </div>
-    <div class="seg" role="group" aria-label="Choose park">
-      <button type="button" data-park="all" aria-pressed="true">Both</button>
-      <button type="button" data-park="dl" aria-pressed="false">Disneyland</button>
-      <button type="button" data-park="dca" aria-pressed="false">Calif. Adventure</button>
+    <div class="seg" role="group" aria-label="View">
+      <button type="button" data-view="list" aria-pressed="true">List</button>
+      <button type="button" data-view="map" aria-pressed="false">Map</button>
+      <button type="button" data-view="time" aria-pressed="false">Timeline</button>
     </div>
   </div>
 </div>
@@ -321,7 +359,15 @@
   <div class="mapwrap"><div id="map"></div></div>
 
   <div class="chips">
-    <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
+    <button type="button" class="chip" data-park="dl" aria-pressed="true">Disneyland</button>
+    <button type="button" class="chip" data-park="dca" aria-pressed="true">Calif. Adventure</button>
+    <button type="button" class="chip sep" data-must aria-pressed="false">Must do</button>
+    <button type="button" class="chip" data-meal="breakfast" aria-pressed="true">Breakfast</button>
+    <button type="button" class="chip" data-meal="am" aria-pressed="true">AM Snack</button>
+    <button type="button" class="chip" data-meal="lunch" aria-pressed="true">Lunch</button>
+    <button type="button" class="chip" data-meal="pm" aria-pressed="true">PM Snack</button>
+    <button type="button" class="chip" data-meal="dinner" aria-pressed="true">Dinner</button>
+    <button type="button" class="chip" data-meal="none" aria-pressed="true">Unplanned</button>
   </div>
 
   <div class="searchbox">
@@ -354,28 +400,52 @@
 
   <footer class="wrap">
     Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
-    Pin positions are approximate &mdash; turn on <em>Move pins</em> and drag any pin to fix it.<br>
+    Places without a pin still show in the list &mdash; tap the target icon on a card to drop one.<br>
     Not affiliated with, endorsed by, or sponsored by Disney.
   </footer>
 </main>
 
-<button type="button" class="fab" id="addBtn" aria-pressed="false">
+<button type="button" class="fab" id="addBtn">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-  <span id="fabLabel">Add pin</span>
+  <span>Add</span>
 </button>
 
 <dialog id="dlg">
   <div class="grab"></div>
   <form method="dialog" class="sheet" id="dlgForm">
-    <h2 id="dlgTitle">Add a pin</h2>
+    <h2 id="dlgTitle">Add a place</h2>
     <p class="err" id="dlgErr"></p>
     <div class="field">
       <label for="fName">Name</label>
       <input id="fName" type="text" autocomplete="off" placeholder="Blue Bayou">
     </div>
     <div class="field">
+      <label for="fPark">Park</label>
+      <select id="fPark">
+        <option value="dl">Disneyland</option>
+        <option value="dca">California Adventure</option>
+      </select>
+    </div>
+    <div class="field">
       <label for="fLand">Land or area</label>
       <input id="fLand" type="text" autocomplete="off" placeholder="Frontierland">
+    </div>
+    <div class="two">
+      <div class="field">
+        <label for="fMeal">Meal</label>
+        <select id="fMeal">
+          <option value="">Unplanned</option>
+          <option value="breakfast">Breakfast</option>
+          <option value="am">AM Snack</option>
+          <option value="lunch">Lunch</option>
+          <option value="pm">PM Snack</option>
+          <option value="dinner">Dinner</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="fDate">Day</label>
+        <input id="fDate" type="date">
+      </div>
     </div>
     <div class="field">
       <label for="fNote">Notes</label>
@@ -401,15 +471,45 @@
   // --food token by hand. Keep them in step.
   var FOOD = "#c64f29";
   var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
+  // Chronological, which is the order the timeline lays a day out in.
+  var MEALS  = [
+    { k:"breakfast", label:"Breakfast" },
+    { k:"am",        label:"AM Snack"  },
+    { k:"lunch",     label:"Lunch"     },
+    { k:"pm",        label:"PM Snack"  },
+    { k:"dinner",    label:"Dinner"    }
+  ];
+  var MEAL_LABEL = {}, MEAL_ORDER = {};
+  MEALS.forEach(function(m, i){ MEAL_LABEL[m.k] = m.label; MEAL_ORDER[m.k] = i; });
   var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180] };
   var ZOOM   = { all:16, dl:17, dca:17 };
   var GLYPH = '<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>';
 
-  var state = { park:"all", mustOnly:false, query:"", adding:false, moving:false };
+  var state = {
+    view:"list",
+    parks:{ dl:true, dca:true },
+    meals:{ breakfast:true, am:true, lunch:true, pm:true, dinner:true, none:true },
+    mustOnly:false, query:"", moving:false
+  };
   var places = load();
   var markers = {};
-  var pending = null;
+  var placingId = null;   // id of the place waiting for a map tap
   var editingId = null;
+
+  function byId(id){
+    for(var i=0;i<places.length;i++){ if(places[i].id === id) return places[i]; }
+    return null;
+  }
+  function hasCoords(p){ return typeof p.lat === "number" && typeof p.lng === "number"; }
+  function mealKey(p){ return p.meal || "none"; }
+
+  function fmtDate(d){
+    var parts = String(d || "").split("-");
+    if(parts.length !== 3) return "";
+    var dt = new Date(+parts[0], +parts[1] - 1, +parts[2]);   // local, not UTC
+    if(isNaN(dt.getTime())) return "";
+    return dt.toLocaleDateString(undefined, { weekday:"short", month:"short", day:"numeric" });
+  }
 
   function load(){
     try{
@@ -450,14 +550,15 @@
   }
 
   function popupHtml(p){
-    var bits = [PARKS[p.park], p.land].filter(Boolean).join(" · ");
+    var bits = [PARKS[p.park], p.land, MEAL_LABEL[p.meal], fmtDate(p.date)].filter(Boolean).join(" · ");
     return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
            (p.note?'<div class="n">'+esc(p.note)+'</div>':'')+
            (p.must?'<div class="g">Must do</div>':'')+'</div>';
   }
 
   function visible(p){
-    if(state.park !== "all" && p.park !== state.park) return false;
+    if(p.park && !state.parks[p.park]) return false;
+    if(!state.meals[mealKey(p)]) return false;
     if(state.mustOnly && !p.must) return false;
     if(state.query){
       var hay = (p.name+" "+(p.land||"")+" "+(p.note||"")).toLowerCase();
@@ -469,14 +570,14 @@
   function drawMarkers(shown){
     Object.keys(markers).forEach(function(id){ map.removeLayer(markers[id]); });
     markers = {};
-    shown.forEach(function(p){
+    shown.filter(hasCoords).forEach(function(p){
       var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:state.moving,title:p.name});
       m.bindPopup(popupHtml(p));
       m.on("dragend",function(e){
         var ll = e.target.getLatLng();
         p.lat = +ll.lat.toFixed(5);
         p.lng = +ll.lng.toFixed(5);
-        persist(p);
+        persist(p, ["lat","lng"]);
       });
       m.addTo(map);
       markers[p.id] = m;
@@ -515,6 +616,61 @@
     });
   }
 
+  function drawTimeline(shown){
+    var host = document.getElementById("list");
+    host.innerHTML = "";
+    if(!shown.length){
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Nothing planned yet. Add a place and give it a day.";
+      host.appendChild(empty);
+      return;
+    }
+
+    var byDate = {}, dates = [];
+    shown.forEach(function(p){
+      var d = p.date || "";
+      if(!byDate[d]){ byDate[d] = []; dates.push(d); }
+      byDate[d].push(p);
+    });
+    // ISO dates sort correctly as strings; undated falls to the end.
+    dates.sort(function(a,b){
+      if(!a) return 1;
+      if(!b) return -1;
+      return a < b ? -1 : a > b ? 1 : 0;
+    });
+
+    dates.forEach(function(d){
+      var sec = document.createElement("section");
+      sec.className = "group";
+      var h = document.createElement("div");
+      h.className = "dayhead";
+      h.innerHTML = '<span class="nm">' + esc(d ? (fmtDate(d) || d) : "Unscheduled") + '</span>' +
+                    '<span class="ct">' + byDate[d].length + '</span>';
+      sec.appendChild(h);
+
+      var items = byDate[d].slice().sort(function(a,b){
+        var ao = MEAL_ORDER[a.meal] === undefined ? 99 : MEAL_ORDER[a.meal];
+        var bo = MEAL_ORDER[b.meal] === undefined ? 99 : MEAL_ORDER[b.meal];
+        return ao - bo || (a.ord || 0) - (b.ord || 0);
+      });
+
+      var lastMeal = null;
+      items.forEach(function(p){
+        var mk = p.meal || "";
+        if(mk !== lastMeal){
+          lastMeal = mk;
+          var mh = document.createElement("div");
+          mh.className = "mealhead";
+          mh.textContent = mk ? MEAL_LABEL[mk] : "No meal set";
+          sec.appendChild(mh);
+        }
+        sec.appendChild(cardFor(p));
+      });
+      host.appendChild(sec);
+    });
+  }
+
   function cardFor(p){
     var el = document.createElement("div");
     el.className = "card" + (p.must ? " must" : "");
@@ -535,13 +691,20 @@
     name.addEventListener("click", function(){ focus(p); });
     body.appendChild(name);
 
-    if(p.must){
+    var tags = [];
+    if(p.meal) tags.push(["tag meal", MEAL_LABEL[p.meal]]);
+    if(p.date && fmtDate(p.date)) tags.push(["tag", fmtDate(p.date)]);
+    if(!hasCoords(p)) tags.push(["tag nowhere", "No pin yet"]);
+    if(p.must) tags.push(["tag gold", "Must do"]);
+    if(tags.length){
       var meta = document.createElement("div");
       meta.className = "meta";
-      var t2 = document.createElement("span");
-      t2.className = "tag gold";
-      t2.textContent = "Must do";
-      meta.appendChild(t2);
+      tags.forEach(function(t){
+        var el = document.createElement("span");
+        el.className = t[0];
+        el.textContent = t[1];
+        meta.appendChild(el);
+      });
       body.appendChild(meta);
     }
 
@@ -562,8 +725,22 @@
     star.setAttribute("aria-pressed", p.must ? "true" : "false");
     star.setAttribute("aria-label", (p.must ? "Unmark " : "Mark ") + p.name + " as a must do");
     star.innerHTML = svg('<path d="M12 3.6l2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z"/>', 1.8);
-    star.addEventListener("click", function(){ p.must = !p.must; persist(p); render(); });
+    star.addEventListener("click", function(){ p.must = !p.must; persist(p, ["must"]); render(); });
     acts.appendChild(star);
+
+    var loc = document.createElement("button");
+    loc.type = "button";
+    loc.className = "iconbtn";
+    if(hasCoords(p)){
+      loc.setAttribute("aria-label", "Show " + p.name + " on the map");
+      loc.innerHTML = svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 1.9);
+      loc.addEventListener("click", function(){ setView("map"); focus(p); });
+    }else{
+      loc.setAttribute("aria-label", "Place " + p.name + " on the map");
+      loc.innerHTML = svg('<path d="M12 21s7-6.2 7-11a7 7 0 10-14 0c0 4.8 7 11 7 11z"/><path d="M12 7v6M9 10h6"/>', 1.9);
+      loc.addEventListener("click", function(){ armPlacement(p); });
+    }
+    acts.appendChild(loc);
 
     var edit = document.createElement("button");
     edit.type = "button";
@@ -589,7 +766,20 @@
     return el;
   }
 
+  function setView(v){
+    state.view = v;
+    document.body.setAttribute("data-view", v);
+    document.querySelectorAll(".seg button").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.view === v ? "true" : "false");
+    });
+    // Leaflet measures 0x0 while the container is display:none, so it has to be
+    // told to re-measure once the map is actually on screen again.
+    if(v === "map") setTimeout(function(){ map.invalidateSize(); }, 0);
+    render();
+  }
+
   function focus(p){
+    if(!hasCoords(p)) return;
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if(reduce) map.setView([p.lat,p.lng], 18);
     else map.flyTo([p.lat,p.lng], 18, {duration:.6});
@@ -601,7 +791,7 @@
   function render(){
     var shown = places.filter(visible);
     drawMarkers(shown);
-    drawList(shown);
+    if(state.view === "time") drawTimeline(shown); else drawList(shown);
     var must = shown.filter(function(p){ return p.must; }).length;
     document.getElementById("count").textContent =
       shown.length + (shown.length === 1 ? " place" : " places") + (must ? " · " + must + " must do" : "");
@@ -612,9 +802,12 @@
 
   function openDialog(p){
     editingId = p ? p.id : null;
-    document.getElementById("dlgTitle").textContent = p ? "Edit pin" : "Add a pin";
+    document.getElementById("dlgTitle").textContent = p ? "Edit place" : "Add a place";
     document.getElementById("fName").value = p ? p.name : "";
+    document.getElementById("fPark").value = p ? (p.park || "dl") : "dl";
     document.getElementById("fLand").value = p ? (p.land||"") : "";
+    document.getElementById("fMeal").value = p ? (p.meal||"") : "";
+    document.getElementById("fDate").value = p ? (p.date||"") : "";
     document.getElementById("fNote").value = p ? (p.note||"") : "";
     err.style.display = "none";
     dlg.showModal();
@@ -622,7 +815,7 @@
   }
 
   document.getElementById("fName").addEventListener("input", function(){ err.style.display = "none"; });
-  document.getElementById("dlgCancel").addEventListener("click", function(){ pending = null; dlg.close(); });
+  document.getElementById("dlgCancel").addEventListener("click", function(){ dlg.close(); });
 
   document.getElementById("dlgSave").addEventListener("click", function(){
     var name = document.getElementById("fName").value.trim();
@@ -634,44 +827,36 @@
     }
     var data = {
       name: name,
+      park: document.getElementById("fPark").value,
       land: document.getElementById("fLand").value.trim() || "Unsorted",
+      meal: document.getElementById("fMeal").value,
+      date: document.getElementById("fDate").value,
       note: document.getElementById("fNote").value.trim()
     };
-    var target = null;
+    var target = null, editedExisting = !!editingId;
     if(editingId){
       places.forEach(function(p){ if(p.id === editingId){ Object.assign(p, data); target = p; } });
-    }else if(pending){
-      target = Object.assign({
-        id: "new-" + Date.now(),
-        park: pending.lat > 33.8095 ? "dl" : "dca",
-        lat: +pending.lat.toFixed(5),
-        lng: +pending.lng.toFixed(5),
-        must: false,
-        ord: nextOrd()
-      }, data);
+    }else{
+      target = Object.assign({ id: "new-" + Date.now(), must:false, ord: nextOrd() }, data);
       places.push(target);
     }
-    pending = null; editingId = null;
-    if(target) persist(target); else save();
+    editingId = null;
+    if(target) persist(target, editedExisting ? Object.keys(data) : null); else save();
     render(); dlg.close();
   });
 
   document.querySelectorAll(".seg button").forEach(function(b){
-    b.addEventListener("click", function(){
-      state.park = b.dataset.park;
-      document.querySelectorAll(".seg button").forEach(function(o){
-        o.setAttribute("aria-pressed", o === b ? "true" : "false");
-      });
-      map.setView(CENTER[state.park], ZOOM[state.park]);
-      render();
-    });
+    b.addEventListener("click", function(){ setView(b.dataset.view); });
   });
 
   document.querySelectorAll(".chip").forEach(function(c){
     c.addEventListener("click", function(){
       var on = c.getAttribute("aria-pressed") === "true";
       c.setAttribute("aria-pressed", on ? "false" : "true");
-      state.mustOnly = !on;
+      if(c.hasAttribute("data-must")) state.mustOnly = !on;
+      else if(c.dataset.park) state.parks[c.dataset.park] = !on;
+      else if(c.dataset.meal) state.meals[c.dataset.meal] = !on;
+      recenter();
       render();
     });
   });
@@ -682,7 +867,6 @@
   });
 
   var addBtn = document.getElementById("addBtn");
-  var fabLabel = document.getElementById("fabLabel");
   var moveBtn = document.getElementById("moveBtn");
   var hint = document.getElementById("hint");
   var HINT_DEFAULT = hint.innerHTML;
@@ -693,17 +877,24 @@
       : HINT_DEFAULT;
   }
 
-  addBtn.addEventListener("click", function(){
-    state.adding = !state.adding;
-    addBtn.setAttribute("aria-pressed", state.adding ? "true" : "false");
-    fabLabel.textContent = state.adding ? "Tap the map" : "Add pin";
-    document.getElementById("map").style.cursor = state.adding ? "crosshair" : "";
-    hint.innerHTML = state.adding ? "Tap anywhere on the map to drop a pin there." : defaultHint();
-    if(state.adding){
-      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("map").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
-    }
-  });
+  // Adding no longer requires a map tap: a place can live in the list with no
+  // pin at all and get one later from the target button on its card.
+  addBtn.addEventListener("click", function(){ openDialog(null); });
+
+  function armPlacement(p){
+    placingId = p.id;
+    setView("map");
+    document.getElementById("map").style.cursor = "crosshair";
+    hint.textContent = "Tap the map to place " + p.name + ".";
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.getElementById("map").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
+  }
+
+  function recenter(){
+    var on = Object.keys(state.parks).filter(function(k){ return state.parks[k]; });
+    var key = on.length === 1 ? on[0] : "all";
+    map.setView(CENTER[key], ZOOM[key]);
+  }
 
   moveBtn.addEventListener("click", function(){
     state.moving = !state.moving;
@@ -714,14 +905,17 @@
   });
 
   map.on("click", function(e){
-    if(!state.adding) return;
-    pending = e.latlng;
-    state.adding = false;
-    addBtn.setAttribute("aria-pressed","false");
-    fabLabel.textContent = "Add pin";
+    if(!placingId) return;
+    var p = byId(placingId);
+    placingId = null;
     document.getElementById("map").style.cursor = "";
     hint.innerHTML = defaultHint();
-    openDialog(null);
+    if(!p) return;
+    p.lat = +e.latlng.lat.toFixed(5);
+    p.lng = +e.latlng.lng.toFixed(5);
+    persist(p, ["lat","lng"]);
+    render();
+    focus(p);
   });
 
   document.getElementById("copyBtn").addEventListener("click", function(){
@@ -764,13 +958,14 @@
      instead of clobbering each other. */
 
   var cloud = { on:false, db:null, user:null, unsub:null, empty:false, cache:false, err:"" };
-  var FIELDS = ["name","park","land","lat","lng","must","note","ord"];
+  var FIELDS = ["name","park","land","meal","date","lat","lng","must","note","ord"];
 
   var syncDot   = document.getElementById("syncDot");
   var syncWho   = document.getElementById("syncWho");
   var syncMsgEl = document.getElementById("syncMsg");
   var authBtn   = document.getElementById("authBtn");
   var uploadBtn = document.getElementById("uploadBtn");
+  var acctBtn   = document.getElementById("acctBtn");
 
   function configured(){
     return !!(window.FIREBASE_CONFIG && typeof firebase !== "undefined");
@@ -782,28 +977,46 @@
     return max + 1;
   }
 
-  function toDoc(p){
+  function toDoc(p, only){
+    var keys = only || FIELDS;
     var d = {};
-    FIELDS.forEach(function(k){ if(p[k] !== undefined && p[k] !== null) d[k] = p[k]; });
-    if(d.must === undefined) d.must = false;
-    if(d.note === undefined) d.note = "";
+    keys.forEach(function(k){ if(p[k] !== undefined && p[k] !== null) d[k] = p[k]; });
+    if(!only){
+      if(d.must === undefined) d.must = false;
+      if(d.note === undefined) d.note = "";
+    }
     return d;
   }
 
   function renderSync(){
     if(!configured()){
       syncDot.className = "dotstat";
-      syncWho.textContent = "Not set up — saving to this browser only.";
       authBtn.hidden = true;
       uploadBtn.hidden = true;
-      syncMsgEl.textContent = cloud.err || "";
+      acctBtn.hidden = true;
+      if(!window.FIREBASE_CONFIG){
+        syncWho.textContent = "Not set up — saving to this browser only.";
+        syncMsgEl.textContent = cloud.err ||
+          "firebase-config.js has no config. If you just deployed one, reload the " +
+          "page — GitHub Pages caches files for ten minutes.";
+      }else{
+        syncWho.textContent = "Firebase didn't load.";
+        syncMsgEl.textContent = cloud.err ||
+          "The config is here but the Firebase scripts never arrived. An ad blocker " +
+          "or content blocker is the usual cause; a privacy extension blocking " +
+          "gstatic.com will do it. Saving to this browser meanwhile.";
+      }
       return;
     }
     authBtn.hidden = false;
+    acctBtn.hidden = false;
     if(cloud.user){
       syncDot.className = "dotstat " + (cloud.cache ? "warn" : "ok");
       syncWho.textContent = cloud.user.email || "Signed in";
       authBtn.textContent = "Sign out";
+      acctBtn.className = "acct in";
+      acctBtn.textContent = (cloud.user.email || "?").charAt(0).toUpperCase();
+      acctBtn.setAttribute("aria-label", "Signed in as " + (cloud.user.email || "") + " — go to sync settings");
       uploadBtn.hidden = !cloud.empty;
       syncMsgEl.textContent = cloud.err ||
         (cloud.cache ? "Offline. Edits are saved here and sync when you get signal."
@@ -812,10 +1025,13 @@
       syncDot.className = "dotstat";
       syncWho.textContent = "Signed out — saving to this browser only.";
       authBtn.textContent = "Sign in with Google";
+      acctBtn.className = "acct";
+      acctBtn.textContent = "Sign in";
+      acctBtn.setAttribute("aria-label", "Sign in with Google to sync");
       uploadBtn.hidden = true;
       syncMsgEl.textContent = cloud.err || "";
     }
-    if(!state.adding && !state.moving) hint.innerHTML = defaultHint();
+    if(!placingId && !state.moving) hint.innerHTML = defaultHint();
   }
 
   function startWatch(){
@@ -864,11 +1080,16 @@
     cloud.on = false;
   }
 
-  function persist(p){
+  // `only` narrows the write to the fields this action actually touched. Two
+  // people editing the same place at once then collide only if they changed the
+  // same field: starring something no longer clobbers someone else's note.
+  function persist(p, only){
     if(cloud.on && cloud.user){
-      cloud.db.collection("places").doc(String(p.id)).set(toDoc(p)).then(null, function(e){
-        cloud.err = "Save failed: " + e.message; renderSync();
-      });
+      cloud.db.collection("places").doc(String(p.id))
+        .set(toDoc(p, only), { merge:true })
+        .then(null, function(e){
+          cloud.err = "Save failed: " + e.message; renderSync();
+        });
     }else{
       save();
     }
@@ -898,6 +1119,15 @@
       cloud.err = "Sign-in failed: " + (e && e.message ? e.message : code);
       renderSync();
     });
+  });
+
+  if(acctBtn) acctBtn.addEventListener("click", function(){
+    if(cloud.user){
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("sync").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
+    }else if(authBtn){
+      authBtn.click();
+    }
   });
 
   if(uploadBtn) uploadBtn.addEventListener("click", function(){
@@ -956,7 +1186,7 @@
     });
   }
 
-  render();
+  setView("list");
   initCloud();
 })();
 </script>
