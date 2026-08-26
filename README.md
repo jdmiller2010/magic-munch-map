@@ -6,6 +6,8 @@ A one-page static site for planning what to eat and ride at Disneyland and Calif
 
 - `index.html` — the whole app, including the logo (inline SVG in the app bar)
 - `places.js` — the data. This is the only file you need to touch day to day.
+- `firebase-config.js` — optional cloud sync config. Null by default; the app works without it.
+- `firestore.rules` — the security rules to paste into the Firebase console.
 - `README.md` — this
 - `CLAUDE.md` — orientation notes for Claude Code
 - `CNAME` — the custom domain. Deleting it drops the site back to `jdmiller2010.github.io/magic-munch-map`.
@@ -41,6 +43,29 @@ Two ways, and they meet in the middle:
 2. **In the file.** Edit `places.js` directly. The format is one object per line.
 
 Browser edits save to that browser only — they won't show up on the other person's phone. When you're happy with them, hit **Copy data file** and paste the result over the contents of `places.js`, then redeploy. Now it's shared.
+
+## Cloud sync (optional)
+
+Without it, the app is browser-local: `places.js` is the shared copy and every browser keeps its own edits. Turn sync on and both phones read and write one live list instead, with no copy-paste step.
+
+Setup is about ten minutes in the Firebase console, all of it listed in the comments at the top of `firebase-config.js`. The short version:
+
+1. Create a Firebase project, then a Firestore database in Native mode (`us-west1` is closest to Anaheim).
+2. Register a web app, copy the `firebaseConfig` object into `firebase-config.js`.
+3. Authentication → Sign-in method → enable **Google**.
+4. Authentication → Settings → Authorized domains → add **mmm.molendino.com**. Sign-in fails silently on the live site without this.
+5. Firestore → Rules → paste `firestore.rules`, with the email addresses that should have access.
+
+Then push. Sign in from the Manage section; the first device to sign in gets an **Upload local list** button that seeds the shared list from `places.js`.
+
+The `apiKey` in `firebase-config.js` is not a secret — it names the project, it doesn't grant anything. Access is controlled entirely by the rules, which is why the allowlist in `firestore.rules` is the part worth getting right.
+
+### How it behaves
+
+- **Signed in**, Firestore owns the list. Each edit writes one document, so two people editing different pins merge cleanly instead of overwriting each other's work.
+- **Offline**, edits are cached locally and sync when signal returns — which matters, because the parks are a dead zone. The status dot turns gold while offline.
+- **Signed out**, nothing changes from before: `places.js` plus this browser's `localStorage`.
+- Signing in does **not** touch `localStorage`, so signing out returns you to whatever you had before, untouched.
 
 ## Fields
 

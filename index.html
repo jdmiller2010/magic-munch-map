@@ -185,6 +185,23 @@
   .btn[aria-pressed="true"]{background:var(--gold);border-color:transparent;color:#2a2000}
   .hint{font-size:13px;color:var(--muted);margin:8px 0 0;max-width:58ch}
 
+  /* sync panel */
+  [hidden]{display:none!important}
+  .sync{
+    border:1px solid var(--line);background:var(--surface);border-radius:var(--r-md);
+    box-shadow:var(--shadow);padding:12px 13px;margin:0 0 14px
+  }
+  .sync .top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+  .sync .lbl{font-family:"Outfit",sans-serif;font-weight:600;font-size:13.5px;flex:none}
+  .sync .who{font-size:13px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .sync .spacer{flex:1}
+  .sync .btn{margin:0}
+  .sync .msg{font-size:13px;color:var(--muted);margin:9px 0 0;max-width:58ch}
+  .sync .msg:empty{display:none}
+  .dotstat{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted)}
+  .dotstat.ok{background:var(--ride)}
+  .dotstat.warn{background:var(--gold)}
+
   /* fab */
   .fab{
     position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:700;
@@ -309,6 +326,19 @@
 
   <div class="tools wrap">
     <h2>Manage</h2>
+
+    <div class="sync" id="sync">
+      <div class="top">
+        <span class="dotstat" id="syncDot"></span>
+        <span class="lbl">Cloud sync</span>
+        <span class="who" id="syncWho"></span>
+        <span class="spacer"></span>
+        <button type="button" class="btn" id="uploadBtn" hidden>Upload local list</button>
+        <button type="button" class="btn" id="authBtn" hidden>Sign in with Google</button>
+      </div>
+      <p class="msg" id="syncMsg"></p>
+    </div>
+
     <button type="button" class="btn" id="moveBtn" aria-pressed="false">Move pins</button>
     <button type="button" class="btn solid" id="copyBtn">Copy data file</button>
     <button type="button" class="btn" id="resetBtn">Reset</button>
@@ -361,6 +391,10 @@
 </dialog>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
+<script src="firebase-config.js"></script>
 <script src="places.js"></script>
 <script>
 (function(){
@@ -388,6 +422,7 @@
     var seed = (window.PLACES || []).map(function(p,i){
       var c = Object.assign({}, p);
       if(!c.id) c.id = "seed-" + i;
+      if(typeof c.ord !== "number") c.ord = i;
       return c;
     });
     try{
@@ -455,7 +490,7 @@
         var ll = e.target.getLatLng();
         p.lat = +ll.lat.toFixed(5);
         p.lng = +ll.lng.toFixed(5);
-        save();
+        persist(p);
       });
       m.addTo(map);
       markers[p.id] = m;
@@ -545,7 +580,7 @@
     star.setAttribute("aria-pressed", p.must ? "true" : "false");
     star.setAttribute("aria-label", (p.must ? "Unmark " : "Mark ") + p.name + " as a must do");
     star.innerHTML = svg('<path d="M12 3.6l2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z"/>', 1.8);
-    star.addEventListener("click", function(){ p.must = !p.must; save(); render(); });
+    star.addEventListener("click", function(){ p.must = !p.must; persist(p); render(); });
     acts.appendChild(star);
 
     var edit = document.createElement("button");
@@ -564,7 +599,7 @@
     del.addEventListener("click", function(){
       if(!confirm("Remove " + p.name + "?")) return;
       places = places.filter(function(x){ return x.id !== p.id; });
-      save(); render();
+      persistDelete(p.id); render();
     });
     acts.appendChild(del);
 
@@ -622,19 +657,23 @@
       land: document.getElementById("fLand").value.trim() || "Unsorted",
       note: document.getElementById("fNote").value.trim()
     };
+    var target = null;
     if(editingId){
-      places.forEach(function(p){ if(p.id === editingId) Object.assign(p, data); });
+      places.forEach(function(p){ if(p.id === editingId){ Object.assign(p, data); target = p; } });
     }else if(pending){
-      places.push(Object.assign({
+      target = Object.assign({
         id: "new-" + Date.now(),
         park: pending.lat > 33.8095 ? "dl" : "dca",
         lat: +pending.lat.toFixed(5),
         lng: +pending.lng.toFixed(5),
-        must: false
-      }, data));
+        must: false,
+        ord: nextOrd()
+      }, data);
+      places.push(target);
     }
     pending = null; editingId = null;
-    save(); render(); dlg.close();
+    if(target) persist(target); else save();
+    render(); dlg.close();
   });
 
   document.querySelectorAll(".seg button").forEach(function(b){
@@ -669,12 +708,18 @@
   var hint = document.getElementById("hint");
   var HINT_DEFAULT = hint.innerHTML;
 
+  function defaultHint(){
+    return cloud.user
+      ? "Signed in. Changes save to the shared list and show up on every signed-in device."
+      : HINT_DEFAULT;
+  }
+
   addBtn.addEventListener("click", function(){
     state.adding = !state.adding;
     addBtn.setAttribute("aria-pressed", state.adding ? "true" : "false");
     fabLabel.textContent = state.adding ? "Tap the map" : "Add pin";
     document.getElementById("map").style.cursor = state.adding ? "crosshair" : "";
-    hint.innerHTML = state.adding ? "Tap anywhere on the map to drop a pin there." : HINT_DEFAULT;
+    hint.innerHTML = state.adding ? "Tap anywhere on the map to drop a pin there." : defaultHint();
     if(state.adding){
       var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       document.getElementById("map").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
@@ -685,7 +730,7 @@
     state.moving = !state.moving;
     moveBtn.setAttribute("aria-pressed", state.moving ? "true" : "false");
     moveBtn.textContent = state.moving ? "Done moving" : "Move pins";
-    hint.innerHTML = state.moving ? "Drag any pin to its real spot. Positions save as you go." : HINT_DEFAULT;
+    hint.innerHTML = state.moving ? "Drag any pin to its real spot. Positions save as you go." : defaultHint();
     render();
   });
 
@@ -696,7 +741,7 @@
     addBtn.setAttribute("aria-pressed","false");
     fabLabel.textContent = "Add pin";
     document.getElementById("map").style.cursor = "";
-    hint.innerHTML = HINT_DEFAULT;
+    hint.innerHTML = defaultHint();
     openDialog(null);
   });
 
@@ -738,7 +783,202 @@
     render();
   });
 
+  /* ---------- cloud sync (optional) ----------
+     Unconfigured or signed out, none of this runs and the app reads
+     places.js + localStorage exactly as before. Signed in, Firestore
+     becomes the store: onSnapshot owns `places` and every mutation
+     writes one document, so two phones editing different pins merge
+     instead of clobbering each other. */
+
+  var cloud = { on:false, db:null, user:null, unsub:null, empty:false, cache:false, err:"" };
+  var FIELDS = ["name","park","land","type","lat","lng","must","note","ord"];
+
+  var syncDot   = document.getElementById("syncDot");
+  var syncWho   = document.getElementById("syncWho");
+  var syncMsgEl = document.getElementById("syncMsg");
+  var authBtn   = document.getElementById("authBtn");
+  var uploadBtn = document.getElementById("uploadBtn");
+
+  function configured(){
+    return !!(window.FIREBASE_CONFIG && typeof firebase !== "undefined");
+  }
+
+  function nextOrd(){
+    var max = -1;
+    places.forEach(function(p){ if(typeof p.ord === "number" && p.ord > max) max = p.ord; });
+    return max + 1;
+  }
+
+  function toDoc(p){
+    var d = {};
+    FIELDS.forEach(function(k){ if(p[k] !== undefined && p[k] !== null) d[k] = p[k]; });
+    if(d.must === undefined) d.must = false;
+    if(d.note === undefined) d.note = "";
+    return d;
+  }
+
+  function renderSync(){
+    if(!configured()){
+      syncDot.className = "dotstat";
+      syncWho.textContent = "Not set up — saving to this browser only.";
+      authBtn.hidden = true;
+      uploadBtn.hidden = true;
+      syncMsgEl.textContent = cloud.err || "";
+      return;
+    }
+    authBtn.hidden = false;
+    if(cloud.user){
+      syncDot.className = "dotstat " + (cloud.cache ? "warn" : "ok");
+      syncWho.textContent = cloud.user.email || "Signed in";
+      authBtn.textContent = "Sign out";
+      uploadBtn.hidden = !cloud.empty;
+      syncMsgEl.textContent = cloud.err ||
+        (cloud.cache ? "Offline. Edits are saved here and sync when you get signal."
+                     : "Shared list. Edits show up on every signed-in device.");
+    }else{
+      syncDot.className = "dotstat";
+      syncWho.textContent = "Signed out — saving to this browser only.";
+      authBtn.textContent = "Sign in with Google";
+      uploadBtn.hidden = true;
+      syncMsgEl.textContent = cloud.err || "";
+    }
+    if(!state.adding && !state.moving) hint.innerHTML = defaultHint();
+  }
+
+  function startWatch(){
+    stopWatch();
+    cloud.on = true;
+    cloud.unsub = cloud.db.collection("places").onSnapshot(
+      { includeMetadataChanges:true },
+      function(snap){
+        var next = [];
+        snap.forEach(function(doc){
+          var d = doc.data() || {};
+          d.id = doc.id;
+          next.push(d);
+        });
+        // Sorted here rather than with orderBy: a multi-field orderBy would
+        // need a composite index, and `ord` keeps the curated grouping.
+        next.sort(function(a,b){
+          var ao = typeof a.ord === "number" ? a.ord : 1e9;
+          var bo = typeof b.ord === "number" ? b.ord : 1e9;
+          return ao - bo || String(a.name||"").localeCompare(String(b.name||""));
+        });
+        places = next;
+        cloud.empty = next.length === 0;
+        cloud.cache = snap.metadata.fromCache;
+        cloud.err = "";
+        renderSync();
+        render();
+      },
+      function(e){
+        cloud.err = e.code === "permission-denied"
+          ? "Access denied. Check that your email is listed in the Firestore rules."
+          : "Sync error: " + e.message;
+        renderSync();
+      }
+    );
+  }
+
+  function stopWatch(){
+    if(cloud.unsub){ cloud.unsub(); cloud.unsub = null; }
+    cloud.on = false;
+  }
+
+  function persist(p){
+    if(cloud.on && cloud.user){
+      cloud.db.collection("places").doc(String(p.id)).set(toDoc(p)).then(null, function(e){
+        cloud.err = "Save failed: " + e.message; renderSync();
+      });
+    }else{
+      save();
+    }
+  }
+
+  function persistDelete(id){
+    if(cloud.on && cloud.user){
+      cloud.db.collection("places").doc(String(id))["delete"]().then(null, function(e){
+        cloud.err = "Delete failed: " + e.message; renderSync();
+      });
+    }else{
+      save();
+    }
+  }
+
+  if(authBtn) authBtn.addEventListener("click", function(){
+    if(cloud.user){ firebase.auth().signOut(); return; }
+    cloud.err = ""; renderSync();
+    var provider = new firebase.auth.GoogleAuthProvider();
+    firebase.auth().signInWithPopup(provider).then(null, function(e){
+      var code = e && e.code;
+      if(code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") return;
+      if(code === "auth/popup-blocked" || code === "auth/operation-not-supported-in-this-environment"){
+        firebase.auth().signInWithRedirect(provider);
+        return;
+      }
+      cloud.err = "Sign-in failed: " + (e && e.message ? e.message : code);
+      renderSync();
+    });
+  });
+
+  if(uploadBtn) uploadBtn.addEventListener("click", function(){
+    var local = load();
+    if(!local.length){ cloud.err = "Nothing here to upload."; renderSync(); return; }
+    if(local.length > 450){ cloud.err = "Too many places for one batch (" + local.length + ")."; renderSync(); return; }
+    if(!confirm("Upload " + local.length + " places to the shared list?")) return;
+    var batch = cloud.db.batch();
+    local.forEach(function(p, i){
+      var d = toDoc(p);
+      if(typeof d.ord !== "number") d.ord = i;
+      batch.set(cloud.db.collection("places").doc(String(p.id || ("seed-" + i))), d);
+    });
+    uploadBtn.disabled = true;
+    batch.commit().then(function(){
+      uploadBtn.disabled = false;
+      cloud.err = "Uploaded " + local.length + " places.";
+      renderSync();
+    }, function(e){
+      uploadBtn.disabled = false;
+      cloud.err = "Upload failed: " + e.message;
+      renderSync();
+    });
+  });
+
+  function initCloud(){
+    if(!configured()){ renderSync(); return; }
+    try{
+      firebase.initializeApp(window.FIREBASE_CONFIG);
+      cloud.db = firebase.firestore();
+      // Offline cache: the park is a dead zone and this app is useless there
+      // without it. Fails harmlessly in private windows or a second tab.
+      if(cloud.db.enablePersistence){
+        cloud.db.enablePersistence({ synchronizeTabs:true }).then(null, function(){});
+      }
+    }catch(e){
+      cloud.err = "Firebase failed to start: " + e.message;
+      renderSync();
+      return;
+    }
+    firebase.auth().onAuthStateChanged(function(u){
+      cloud.user = u || null;
+      cloud.err = "";
+      if(u){
+        startWatch();
+      }else{
+        stopWatch();
+        places = load();
+        render();
+      }
+      renderSync();
+    });
+    firebase.auth().getRedirectResult().then(null, function(e){
+      cloud.err = "Sign-in failed: " + e.message;
+      renderSync();
+    });
+  }
+
   render();
+  initCloud();
 })();
 </script>
 </body>

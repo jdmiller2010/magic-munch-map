@@ -24,7 +24,19 @@ Place data has three tiers, resolved in `load()` ([index.html:387](index.html#L3
 2. **`localStorage["magicMunchMap.v1"]`** — per-browser edits (falling back to the pre-rename `parkFoodMap.v1` key on read). If a non-empty array is stored, it wins outright over `window.PLACES`; the seed is not merged in, so edits to `places.js` are invisible to a browser that has local edits until Reset. Every mutation (add, edit, star, delete, pin drag) calls `save()` immediately.
 3. **"Copy data file"** ([index.html:703](index.html#L703)) — serializes current `places` back into `window.PLACES = [...]` source text for pasting into `places.js`. This is the only path for promoting local edits into shared data, so its output format and the `places.js` format must stay in sync.
 
-A place record: `{ id, name, park: "dl"|"dca", land, type: "food"|"ride"|"show"|"shop", lat, lng, must, note }`.
+A place record: `{ id, name, park: "dl"|"dca", land, type: "food"|"ride"|"show"|"shop", lat, lng, must, note, ord }`.
+
+`ord` controls list grouping order. It exists because Firestore returns documents unordered and a multi-field `orderBy` would require a composite index, so the snapshot handler sorts client-side on `ord` instead — which also preserves the curated ordering of `places.js` rather than falling back to alphabetical.
+
+### Cloud sync
+
+A fourth, optional tier sits on top, in the cloud block at the end of the script. It is inert unless `window.FIREBASE_CONFIG` is non-null *and* the Firebase SDK loaded, both checked by `configured()`. When a user signs in:
+
+- `startWatch()` subscribes to the `places` collection and **`onSnapshot` becomes the owner of the `places` array** — it replaces the array wholesale and calls `render()`. Local mutation is still applied optimistically first; the snapshot echo reconciles it, and because the array is replaced rather than appended to, that cannot duplicate.
+- Every mutation goes through `persist(p)` / `persistDelete(id)`, which write a **single document** in cloud mode and fall back to `save()` (whole-array localStorage) when signed out. Never call `save()` directly from a mutation site — in cloud mode that would write a stale localStorage shadow that then shadows `places.js` after sign-out.
+- Firestore's offline cache means writes succeed with no network; their promises simply don't settle until the server acks, so error handlers must not assume failure from silence.
+
+The Firebase SDK is loaded as **compat** builds, deliberately: they are classic scripts, which keeps the ES5 dialect and the `file://` workflow working. The modular SDK is ES-module-only and would break both.
 
 ## Rendering model
 
