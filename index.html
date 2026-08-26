@@ -896,9 +896,15 @@
         render();
       },
       function(e){
-        cloud.err = e.code === "permission-denied"
-          ? "Access denied. Check that your email is listed in the Firestore rules."
-          : "Sync error: " + e.message;
+        if(e.code === "permission-denied"){
+          // Rules rejected this account. Drop back to local mode so edits land
+          // in localStorage instead of being written nowhere at all.
+          cloud.on = false;
+          cloud.err = "Not on the guest list. Your email isn't in the Firestore " +
+                      "rules, so this is saving to your browser only.";
+        }else{
+          cloud.err = "Sync error: " + e.message;
+        }
         renderSync();
       }
     );

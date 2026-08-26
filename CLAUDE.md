@@ -35,6 +35,7 @@ A fourth, optional tier sits on top, in the cloud block at the end of the script
 - `startWatch()` subscribes to the `places` collection and **`onSnapshot` becomes the owner of the `places` array** — it replaces the array wholesale and calls `render()`. Local mutation is still applied optimistically first; the snapshot echo reconciles it, and because the array is replaced rather than appended to, that cannot duplicate.
 - Every mutation goes through `persist(p)` / `persistDelete(id)`, which write a **single document** in cloud mode and fall back to `save()` (whole-array localStorage) when signed out. Never call `save()` directly from a mutation site — in cloud mode that would write a stale localStorage shadow that then shadows `places.js` after sign-out.
 - Firestore's offline cache means writes succeed with no network; their promises simply don't settle until the server acks, so error handlers must not assume failure from silence.
+- A `permission-denied` snapshot error sets `cloud.on = false`, dropping the session back to local mode. Without that the account is signed in but unauthorized, `persist()` still routes to Firestore, and every edit is written nowhere — rejected by the rules and skipped by the localStorage fallback.
 
 The Firebase SDK is loaded as **compat** builds, deliberately: they are classic scripts, which keeps the ES5 dialect and the `file://` workflow working. The modular SDK is ES-module-only and would break both.
 
