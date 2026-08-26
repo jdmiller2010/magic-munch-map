@@ -32,7 +32,11 @@
     --gold-soft:#fff2d4;
     --logo-a:#37c3d8;
     --logo-b:#0e8fa8;
-    --chick-bg:#16233a;
+    /* The floating controls - chicken, Add, list/map - are one family and
+       share a backdrop: navy on the light theme, and light on the dark one,
+       where navy would sink into the page. */
+    --float-bg:#16233a;
+    --float-ink:#fffdf8;
     --food:#c64f29;
     --shadow:0 1px 2px rgba(74,54,24,.07),0 6px 20px rgba(74,54,24,.09);
     --shadow-lg:0 10px 34px rgba(74,54,24,.18);
@@ -47,8 +51,7 @@
       --muted:#9ba7b7; --line:#2f3a49; --brand:#3fcde2; --brand-soft:#0d3742; --on-brand:#06272f;
       --gold:#ffc247; --gold-soft:#3d3111;
       --logo-a:#6fe3f2; --logo-b:#2ab4cd;
-      /* lighter, or it vanishes into the dark page behind it */
-      --chick-bg:#2b3956;
+      --float-bg:#fffdf8; --float-ink:#16233a;
       --food:#ff8460;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
       --shadow-lg:0 8px 34px rgba(0,0,0,.5);
@@ -176,7 +179,7 @@
     position:fixed;left:50%;transform:translateX(-50%);
     bottom:calc(18px + var(--safe-b));z-index:700;
     appearance:none;cursor:pointer;border:0;border-radius:999px;
-    background:var(--ink);color:var(--bg);box-shadow:var(--shadow-lg);
+    background:var(--float-bg);color:var(--float-ink);box-shadow:var(--shadow-lg);
     font-family:"Fredoka",sans-serif;font-weight:600;font-size:14px;
     padding:11px 18px;display:flex;align-items:center;gap:8px;
     transition:transform .2s var(--spring)
@@ -410,7 +413,8 @@
   /* fab */
   .fab{
     position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:700;
-    appearance:none;cursor:pointer;border:0;border-radius:999px;background:var(--brand);color:var(--on-brand);
+    appearance:none;cursor:pointer;border:0;border-radius:999px;
+    background:var(--float-bg);color:var(--float-ink);
     font-size:14.5px;font-weight:600;padding:14px 20px;box-shadow:var(--shadow-lg);
     display:flex;align-items:center;gap:8px;transition:transform .2s var(--spring)
   }
@@ -424,7 +428,7 @@
   .chick{
     position:fixed;left:16px;bottom:calc(16px + var(--safe-b));z-index:700;
     appearance:none;cursor:pointer;border:0;border-radius:999px;width:56px;height:56px;
-    background:var(--chick-bg);box-shadow:var(--shadow-lg);padding:0;
+    background:var(--float-bg);box-shadow:var(--shadow-lg);padding:0;
     display:flex;align-items:center;justify-content:center;
     transition:transform .2s var(--spring)
   }
