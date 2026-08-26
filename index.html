@@ -965,6 +965,37 @@
   }
 
   function hasCoords(p){ return typeof p.lat === "number" && typeof p.lng === "number"; }
+  /* Disney's menu sections are not the app's meals. "Lunch And Dinner" is
+     1,457 items and is plainly both; "Snack" says nothing about morning or
+     afternoon, so it answers to either. Mapping only the single-word labels
+     left 2,737 of 4,020 items unreachable by the meal filter. */
+  var PERIOD_MEALS = {
+    "breakfast":["breakfast"], "brunch":["breakfast","lunch"],
+    "lunch":["lunch"], "dinner":["dinner"], "lunch and dinner":["lunch","dinner"],
+    "snack":["am","pm"], "dessert":["dessert"], "late night dining":["dinner"],
+    "lounge":[], "special":[]
+  };
+
+  function mealsFor(p){
+    if(p.meal) return [p.meal];
+    var k = String(p.period || "").toLowerCase().trim();
+    if(PERIOD_MEALS[k]) return PERIOD_MEALS[k];
+    var out = [];
+    if(k.indexOf("breakfast") !== -1) out.push("breakfast");
+    if(k.indexOf("lunch") !== -1) out.push("lunch");
+    if(k.indexOf("dinner") !== -1) out.push("dinner");
+    if(k.indexOf("dessert") !== -1) out.push("dessert");
+    if(k.indexOf("snack") !== -1){ out.push("am"); out.push("pm"); }
+    return out;
+  }
+
+  function mealOk(p){
+    if(!state.meal) return true;
+    var ms = mealsFor(p);
+    if(state.meal === "none") return ms.length === 0;
+    return ms.indexOf(state.meal) !== -1;
+  }
+
   function mealKey(p){ return p.meal || "none"; }
 
   function fmtDate(d){
@@ -1499,7 +1530,7 @@
 
   function visible(p){
     if(p.park && !state.parks[p.park]) return false;
-    if(state.meal && mealKey(p) !== state.meal) return false;
+    if(!mealOk(p)) return false;
     if(state.mustOnly && !p.must) return false;
     if(!textMatches(p.name + " " + (p.venue||"") + " " + (p.land||"") + " " + (p.note||"") + " " + (p.desc||""))) return false;
     return true;
@@ -1701,17 +1732,19 @@
   // Flat, ordered result set for Explore. Sections are applied at draw time;
   // the map needs one list with coordinates resolved.
   function exploreList(){
-    // Dishes and places are capped separately: four thousand dishes in one
-    // list would push every place past the cut.
-    var have = savedMenuKeys(), out = [], spots = [];
+    /* Each section has its own cap. Sharing one meant the 193 seasonal items
+       were pushed first and the menu got whatever was left - seven of nearly
+       four thousand, which is why a big menu looked empty. */
+    var have = savedMenuKeys(), seasonal = [], menu = [], spots = [];
 
     function pushDish(m){
       var c = hitCoords(m);
       // NOT `kind`: saved places already use that for the OSM amenity type,
       // and a saved restaurant would then be mistaken for an explore hit.
-      out.push({ hit:"dish", m:m, name:m.dish, id:"dish:" + menuKey(m),
-                 owned:!!have[menuKey(m)],
-                 lat:c ? c.lat : null, lng:c ? c.lng : null });
+      (m.seasonal ? seasonal : menu).push({
+        hit:"dish", m:m, name:m.dish, id:"dish:" + menuKey(m),
+        owned:!!have[menuKey(m)],
+        lat:c ? c.lat : null, lng:c ? c.lng : null });
     }
 
     var all = state.scope === "all";
@@ -1720,7 +1753,7 @@
       CATALOG.forEach(function(m){
         if(!all && !m.seasonal) return;
         if(m.park && !state.parks[m.park]) return;
-        if(state.meal && m.meal && m.meal !== state.meal) return;
+        if(!mealOk(m)) return;
         if(!textMatches(m.dish + " " + m.venue + " " + (m.desc || ""))) return;
         pushDish(m);
       });
@@ -1731,12 +1764,6 @@
         if(!textMatches(v.name + " " + (v.cuisine || ""))) return;
         spots.push({ hit:"venue", v:v, name:v.name, id:"venue:" + norm(v.name), lat:v.lat, lng:v.lng,
                      owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
-      });
-      // photographed, seasonal things first - they are the ones worth looking at
-      out.sort(function(a, b){
-        var as = a.hit === "dish" && a.m.seasonal ? 0 : a.hit === "dish" ? 1 : 2;
-        var bs = b.hit === "dish" && b.m.seasonal ? 0 : b.hit === "dish" ? 1 : 2;
-        return as - bs;
       });
     }else{
       CATALOG.forEach(function(m){
@@ -1751,7 +1778,11 @@
       });
     }
 
-    out = out.slice(0, 200).concat(spots.slice(0, 40));
+    // Seasonal first because it is the photographed set, but never at the
+    // expense of the menu.
+    var out = seasonal.slice(0, 120)
+                .concat(menu.slice(0, 300))
+                .concat(spots.slice(0, 40));
 
     if(state.here){
       out.sort(function(a, b){

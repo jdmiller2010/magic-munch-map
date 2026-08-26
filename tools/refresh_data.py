@@ -42,11 +42,14 @@ ZONES = [
 ]
 MENU_API = "https://disneyland.disney.go.com/dining/dinemenu/api/menu?searchTerm=%s&language=en-us"
 
-# Disney's meal period labels -> the app's meal keys. "Snack" stays unset
-# because it says nothing about morning or afternoon, which is the whole
-# distinction the app's AM/PM snack tags make.
+# Disney's meal period labels -> the app's meal keys. Only the single-word
+# labels used to map, which left "Lunch And Dinner" - the largest bucket by
+# far - with no meal at all and unreachable by the filter. The raw label is
+# kept in `period` regardless, and the app widens it further (a Snack answers
+# to both AM and PM, which a single key cannot express).
 MEAL = {"breakfast": "breakfast", "lunch": "lunch", "dinner": "dinner",
-        "brunch": "lunch", "dessert": "dessert"}
+        "brunch": "lunch", "dessert": "dessert",
+        "lunch and dinner": "lunch", "late night dining": "dinner"}
 
 
 def get(url, headers=UA, timeout=45):
