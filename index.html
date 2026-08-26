@@ -122,15 +122,19 @@
   .leaflet-container{font-family:"Inter",sans-serif;border-radius:var(--r-lg)}
   /* The blur is on the veil itself, which softens the hole edges into a
      gradient instead of a hard cut. */
+  /* A wide, pale haze rather than a dark curtain: the tiles are light in both
+     themes, so washing them out reads as "out of focus" where darkening just
+     reads as "night". The blur is what does the work - it is deliberately far
+     wider than the edge so the falloff is gradual. */
   .focusmask{
-    fill:#0d1826;fill-opacity:.58;pointer-events:none;
-    filter:blur(5px);stroke-linejoin:round
+    fill:#ffffff;fill-opacity:.66;pointer-events:none;
+    filter:blur(26px);stroke-linejoin:round
   }
   @media (prefers-color-scheme:dark){
-    .focusmask{fill:#00060d;fill-opacity:.68}
+    .focusmask{fill:#0b111a;fill-opacity:.42}
   }
   @media (prefers-reduced-motion:reduce){
-    .focusmask{filter:blur(3px)}
+    .focusmask{filter:blur(18px)}
   }
   .leaflet-popup-content-wrapper{border-radius:var(--r-md);box-shadow:var(--shadow-lg)}
 
