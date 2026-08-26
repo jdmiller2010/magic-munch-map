@@ -89,14 +89,20 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 
 The logo is a map pin with a bite taken out of it, flanked by two twinkling sparkles — magic, munch, map. It's inline SVG in the app bar (and, hardcoded, a `data:` favicon in `<head>`), so it recolors with the theme instead of shipping an image file. The bite is a `<mask>`: two black circles over a white rect. The sparkle twinkle stops under `prefers-reduced-motion`.
 
-Modern mobile-app layout: sticky app bar, segmented park control, horizontally scrolling filter chips, card list, floating action button, and a bottom sheet for editing. Dark mode follows the system setting. Fonts are Outfit (headings) and Inter (body) from Google Fonts.
+Modern mobile-app layout: sticky app bar, segmented park control, horizontally scrolling filter chips, card list, floating action button, and a bottom sheet for editing. Dark mode follows the system setting. Fonts are Fredoka (headings, rounded and friendly) and Inter (body) from Google Fonts.
+
+The look borrows from WALL-E: a sun-bleached earth palette — warm sand ground, rust and bronze, Buy-n-Large amber — with EVE's glowing cyan as the chrome on top of it. Dark mode moves to the night side of the Axiom, deep blue-black with the cyan turned up. Whimsy comes from form rather than decoration: generous rounding, springy overshoot on every press, cards that lift on hover, a floating button that bobs gently, and an eye in the middle of every map pin that blinks about once every six seconds in the logo. All motion is gated on `prefers-reduced-motion`.
+
+Every foreground/background pair in the palette meets WCAG AA (4.5:1 for body text), including the white labels on selected filter chips, which the previous palette did not.
 
 Palette lives in the `:root` block at the top of `index.html`, with dark values in the `prefers-color-scheme` block right below it:
 
-- `--brand #5b3fd6` primary actions
+- `--brand #0b7789` primary actions, with `--on-brand` for text that sits on top of it
 - `--logo-a` / `--logo-b` the gradient in the logo pin
-- `--gold #f0a500` must-do state
-- `--food #f2603c` / `--ride #009e86` / `--show #8055ff` / `--shop #c07d1f` category colors
+- `--gold #e09400` must-do state
+- `--food #c64f29` / `--ride #358352` / `--show #7458e0` / `--shop #996c2b` category colors
+
+`--on-brand` exists because `--brand` inverts between themes: it is a dark cyan on light backgrounds and a bright cyan on dark ones, so anything painted on a solid brand surface needs ink that flips with it rather than hardcoded white.
 
 ## Attribution
 

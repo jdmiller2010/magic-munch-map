@@ -3,43 +3,48 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#5b3fd6">
+<meta name="theme-color" content="#0b7789">
 <title>Magic Munch Map</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22a%22%20x1%3D%227%22%20y1%3D%224%22%20x2%3D%2231%22%20y2%3D%2234%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%237b5cff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%235b3fd6%22%2F%3E%3C%2FlinearGradient%3E%3Cmask%20id%3D%22b%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2230.2%22%20cy%3D%229.5%22%20r%3D%226.2%22%2F%3E%3Ccircle%20cx%3D%2226.5%22%20cy%3D%222.8%22%20r%3D%223.2%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M19%2036C13%2027%208%2020%208%2014a11%2011%200%201%201%2022%200c0%206-5%2013-11%2022z%22%20fill%3D%22url%28%23a%29%22%20mask%3D%22url%28%23b%29%22%2F%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%2214%22%20r%3D%223.9%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M5.2%2023Q5.2%2027%209.2%2027Q5.2%2027%205.2%2031Q5.2%2027%201.2%2027Q5.2%2027%205.2%2023Z%22%20fill%3D%22%23f0a500%22%2F%3E%3C%2Fsvg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22a%22%20x1%3D%227%22%20y1%3D%224%22%20x2%3D%2231%22%20y2%3D%2234%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%2337c3d8%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%230e8fa8%22%2F%3E%3C%2FlinearGradient%3E%3Cmask%20id%3D%22b%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2230.2%22%20cy%3D%229.5%22%20r%3D%226.2%22%2F%3E%3Ccircle%20cx%3D%2226.5%22%20cy%3D%222.8%22%20r%3D%223.2%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M19%2036C13%2027%208%2020%208%2014a11%2011%200%201%201%2022%200c0%206-5%2013-11%2022z%22%20fill%3D%22url%28%23a%29%22%20mask%3D%22url%28%23b%29%22%2F%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%2214%22%20r%3D%224.7%22%20fill%3D%22%23fbfdfe%22%2F%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%2214%22%20r%3D%222.6%22%20fill%3D%22%230a4f5e%22%2F%3E%3Ccircle%20cx%3D%2217.85%22%20cy%3D%2212.85%22%20r%3D%221%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M5.2%2023Q5.2%2027%209.2%2027Q5.2%2027%205.2%2031Q5.2%2027%201.2%2027Q5.2%2027%205.2%2023Z%22%20fill%3D%22%23e09400%22%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
+  /* Sun-bleached earth with EVE against it: warm sand ground, glowing
+     cyan chrome, Buy-n-Large amber for anything worth stopping for. */
   :root{
-    --bg:#f6f6fb;
-    --surface:#ffffff;
-    --surface-2:#f0f0f7;
-    --ink:#191932;
-    --muted:#6c6c86;
-    --line:#e7e7f1;
-    --brand:#5b3fd6;
-    --brand-soft:#ede9fd;
-    --gold:#f0a500;
-    --gold-soft:#fff4d9;
-    --logo-a:#7b5cff;
-    --logo-b:#5b3fd6;
-    --food:#f2603c;
-    --ride:#009e86;
-    --show:#8055ff;
-    --shop:#c07d1f;
-    --shadow:0 1px 2px rgba(25,25,50,.06),0 6px 20px rgba(25,25,50,.07);
-    --shadow-lg:0 8px 30px rgba(25,25,50,.16);
-    --r-lg:20px; --r-md:14px; --r-sm:10px;
+    --bg:#f7f2e8;
+    --surface:#fffdf8;
+    --surface-2:#efe7d8;
+    --ink:#2c2317;
+    --muted:#756a58;
+    --line:#e5dac6;
+    --brand:#0b7789;
+    --brand-soft:#e3f3f7;
+    --on-brand:#ffffff;
+    --gold:#e09400;
+    --gold-soft:#fff2d4;
+    --logo-a:#37c3d8;
+    --logo-b:#0e8fa8;
+    --food:#c64f29;
+    --ride:#358352;
+    --show:#7458e0;
+    --shop:#996c2b;
+    --shadow:0 1px 2px rgba(74,54,24,.07),0 6px 20px rgba(74,54,24,.09);
+    --shadow-lg:0 10px 34px rgba(74,54,24,.18);
+    --r-lg:26px; --r-md:18px; --r-sm:13px;
+    --spring:cubic-bezier(.34,1.56,.64,1);
     --safe-b:env(safe-area-inset-bottom,0px);
   }
+  /* Night side of the Axiom. */
   @media (prefers-color-scheme:dark){
     :root{
-      --bg:#111120; --surface:#1a1a2e; --surface-2:#22223c; --ink:#ececf6;
-      --muted:#9a9ab8; --line:#2c2c48; --brand:#8b74ff; --brand-soft:#2a2350;
-      --gold:#ffc247; --gold-soft:#3a2f10;
-      --logo-a:#a288ff; --logo-b:#7b5cff;
-      --food:#ff7f5c; --ride:#22c3a6; --show:#a288ff; --shop:#e0a34a;
+      --bg:#131820; --surface:#1c232e; --surface-2:#26303d; --ink:#eef2f7;
+      --muted:#9ba7b7; --line:#2f3a49; --brand:#3fcde2; --brand-soft:#0d3742; --on-brand:#06272f;
+      --gold:#ffc247; --gold-soft:#3d3111;
+      --logo-a:#6fe3f2; --logo-b:#2ab4cd;
+      --food:#ff8460; --ride:#5ecb85; --show:#a893ff; --shop:#dda65a;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
       --shadow-lg:0 8px 34px rgba(0,0,0,.5);
     }
@@ -52,7 +57,7 @@
     -webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;
     padding-bottom:calc(84px + var(--safe-b));
   }
-  h1,h2,.ttl{font-family:"Outfit",sans-serif;font-weight:700;letter-spacing:-.02em;margin:0}
+  h1,h2,.ttl{font-family:"Fredoka",sans-serif;font-weight:700;letter-spacing:-.02em;margin:0}
   a{color:var(--brand)}
   button{font-family:inherit}
   :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
@@ -76,7 +81,9 @@
   .brand{display:flex;align-items:center;gap:11px;min-width:0}
   .brandtext{min-width:0}
   .mark{flex:none;width:40px;height:40px;display:block}
-  .mark svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 5px rgba(91,63,214,.3))}
+  .mark svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 6px rgba(14,143,168,.34))}
+  .mark .eye{transform-box:fill-box;transform-origin:center;animation:blink 6.5s infinite}
+  @keyframes blink{0%,95%,100%{transform:scaleY(1)}97.5%{transform:scaleY(.12)}}
   .mark .tw{transform-box:fill-box;transform-origin:center;animation:tw 2.8s ease-in-out infinite}
   .mark .tw2{animation-delay:1.4s}
   @keyframes tw{0%,100%{opacity:.4;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}
@@ -108,7 +115,7 @@
     flex:none;appearance:none;cursor:pointer;font-size:13px;font-weight:600;
     padding:8px 14px;border-radius:999px;border:1px solid var(--line);
     background:var(--surface);color:var(--muted);display:inline-flex;align-items:center;gap:7px;
-    transition:transform .12s
+    transition:transform .2s var(--spring)
   }
   .chip:active{transform:scale(.96)}
   .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
@@ -137,20 +144,28 @@
   .list{padding:6px 16px 0}
   .group{margin-top:20px}
   .grouphead{display:flex;align-items:baseline;gap:8px;margin:0 2px 9px}
-  .grouphead .nm{font-family:"Outfit",sans-serif;font-weight:600;font-size:15px}
+  .grouphead .nm{font-family:"Fredoka",sans-serif;font-weight:600;font-size:15px}
   .grouphead .pk{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
 
   .card{
     background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
     box-shadow:var(--shadow);padding:13px 13px 12px;margin-bottom:10px;
-    display:flex;gap:12px;align-items:flex-start
+    display:flex;gap:12px;align-items:flex-start;
+    transition:transform .2s var(--spring),box-shadow .2s ease
+  }
+  @media (hover:hover){
+    .card:hover{transform:translateY(-2px);box-shadow:var(--shadow-lg)}
   }
   .card.must{border-color:var(--gold);background:linear-gradient(0deg,var(--gold-soft),var(--gold-soft))}
-  .swatch{width:34px;height:34px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+  .swatch{
+    width:34px;height:34px;border-radius:13px;flex:none;display:flex;align-items:center;
+    justify-content:center;color:#fff;transition:transform .25s var(--spring)
+  }
+  @media (hover:hover){ .card:hover .swatch{transform:rotate(-6deg) scale(1.06)} }
   .swatch svg{width:18px;height:18px}
   .card .body{flex:1;min-width:0}
   .card .name{
-    font-family:"Outfit",sans-serif;font-weight:600;font-size:15.5px;line-height:1.3;
+    font-family:"Fredoka",sans-serif;font-weight:600;font-size:15.5px;line-height:1.3;
     background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink)
   }
   .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
@@ -164,7 +179,7 @@
   .iconbtn{
     appearance:none;width:34px;height:34px;padding:0;cursor:pointer;border-radius:10px;
     border:1px solid var(--line);background:var(--surface);color:var(--muted);
-    display:flex;align-items:center;justify-content:center;transition:transform .12s
+    display:flex;align-items:center;justify-content:center;transition:transform .2s var(--spring)
   }
   .iconbtn:active{transform:scale(.92)}
   .iconbtn svg{width:17px;height:17px}
@@ -178,10 +193,10 @@
   .btn{
     appearance:none;cursor:pointer;font-size:13.5px;font-weight:600;padding:10px 15px;
     margin:0 8px 8px 0;border-radius:var(--r-sm);border:1px solid var(--line);
-    background:var(--surface);color:var(--ink);box-shadow:var(--shadow);transition:transform .12s
+    background:var(--surface);color:var(--ink);box-shadow:var(--shadow);transition:transform .2s var(--spring)
   }
   .btn:active{transform:scale(.97)}
-  .btn.solid{background:var(--brand);border-color:transparent;color:#fff}
+  .btn.solid{background:var(--brand);border-color:transparent;color:var(--on-brand)}
   .btn[aria-pressed="true"]{background:var(--gold);border-color:transparent;color:#2a2000}
   .hint{font-size:13px;color:var(--muted);margin:8px 0 0;max-width:58ch}
 
@@ -192,7 +207,7 @@
     box-shadow:var(--shadow);padding:12px 13px;margin:0 0 14px
   }
   .sync .top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
-  .sync .lbl{font-family:"Outfit",sans-serif;font-weight:600;font-size:13.5px;flex:none}
+  .sync .lbl{font-family:"Fredoka",sans-serif;font-weight:600;font-size:13.5px;flex:none}
   .sync .who{font-size:13px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .sync .spacer{flex:1}
   .sync .btn{margin:0}
@@ -205,11 +220,13 @@
   /* fab */
   .fab{
     position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:700;
-    appearance:none;cursor:pointer;border:0;border-radius:999px;background:var(--brand);color:#fff;
+    appearance:none;cursor:pointer;border:0;border-radius:999px;background:var(--brand);color:var(--on-brand);
     font-size:14.5px;font-weight:600;padding:14px 20px;box-shadow:var(--shadow-lg);
-    display:flex;align-items:center;gap:8px;transition:transform .14s
+    display:flex;align-items:center;gap:8px;transition:transform .2s var(--spring)
   }
-  .fab:active{transform:scale(.95)}
+  .fab{animation:bob 3.6s ease-in-out infinite}
+  .fab:active{animation:none;transform:scale(.94)}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5px)}}
   .fab svg{width:18px;height:18px}
   .fab[aria-pressed="true"]{background:var(--gold);color:#2a2000}
 
@@ -242,16 +259,17 @@
   /* pins */
   .pin{
     width:26px;height:26px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
-    border:2.5px solid #fff;box-shadow:0 3px 8px rgba(25,25,50,.35);box-sizing:border-box;
+    border:2.5px solid #fff;box-shadow:0 3px 8px rgba(44,35,23,.35);box-sizing:border-box;
     display:flex;align-items:center;justify-content:center
   }
-  .pin i{width:7px;height:7px;border-radius:50%;background:#fff;display:block}
-  .pin.must{border-color:var(--gold);box-shadow:0 0 0 3px rgba(240,165,0,.28),0 3px 8px rgba(25,25,50,.35)}
-  .pop{font-family:"Inter",sans-serif;color:#191932}
-  .pop b{font-family:"Outfit",sans-serif;font-size:14.5px;display:block;line-height:1.3}
-  .pop .m{font-size:11.5px;color:#6c6c86;margin-top:2px}
+  /* every pin is a small character looking back at you */
+  .pin i{width:9px;height:9px;border-radius:50%;background:#0a4f5e;border:2px solid #fbfdfe;display:block}
+  .pin.must{border-color:var(--gold);box-shadow:0 0 0 3px rgba(224,148,0,.3),0 3px 8px rgba(44,35,23,.35)}
+  .pop{font-family:"Inter",sans-serif;color:#2c2317}
+  .pop b{font-family:"Fredoka",sans-serif;font-size:14.5px;display:block;line-height:1.3}
+  .pop .m{font-size:11.5px;color:#756a58;margin-top:2px}
   .pop .n{margin-top:6px;font-size:13px}
-  .pop .g{display:inline-block;margin-top:7px;background:#f0a500;color:#2a2000;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+  .pop .g{display:inline-block;margin-top:7px;background:#e09400;color:#2a2000;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
 
   footer{padding:28px 16px 0;font-size:12px;line-height:1.7;color:var(--muted)}
 
@@ -286,7 +304,11 @@
               </mask>
             </defs>
             <path d="M19 36C13 27 8 20 8 14a11 11 0 1 1 22 0c0 6-5 13-11 22z" fill="url(#mmPin)" mask="url(#mmBite)"/>
-            <circle cx="19" cy="14" r="3.9" fill="var(--surface)"/>
+            <g class="eye">
+              <circle cx="19" cy="14" r="4.7" fill="#fbfdfe"/>
+              <circle cx="19" cy="14" r="2.6" fill="#0a4f5e"/>
+              <circle cx="17.85" cy="12.85" r="1" fill="#fff"/>
+            </g>
             <path class="tw" d="M5.2 23Q5.2 27 9.2 27Q5.2 27 5.2 31Q5.2 27 1.2 27Q5.2 27 5.2 23Z" fill="var(--gold)"/>
             <path class="tw tw2" d="M33.5 23Q33.5 26 36.5 26Q33.5 26 33.5 29Q33.5 26 30.5 26Q33.5 26 33.5 23Z" fill="var(--gold)"/>
           </svg>
@@ -400,7 +422,9 @@
 (function(){
   var KEY = "magicMunchMap.v1";
   var LEGACY_KEY = "parkFoodMap.v1";
-  var COLORS = { food:"#f2603c", ride:"#009e86", show:"#8055ff", shop:"#c07d1f" };
+  // Leaflet injects markers outside the themed tree, so these mirror the
+  // --food/--ride/--show/--shop tokens by hand. Keep them in step.
+  var COLORS = { food:"#c64f29", ride:"#358352", show:"#7458e0", shop:"#996c2b" };
   var KINDS  = { food:"Food", ride:"Ride", show:"Show", shop:"Shop" };
   var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
   var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180] };
