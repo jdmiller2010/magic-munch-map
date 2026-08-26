@@ -80,7 +80,9 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 ### Catalogs, and the shape of the app
 
-**The header is a phone budget.** Three sticky rows, about 140px: mark + search + account, then mode + count + Filters, then the chips. The old layout spent ~240px before any content. The `<h1>` survives as `.sr` (visually hidden) — the mark carries the identity on screen because a phone cannot spare the row. Group/meal/scope live in a filter sheet, which also shows only the controls that apply to the current mode.
+**Filters live in one sheet, not a chip strip.** The strip scrolled sideways, so options fell off the edge with nothing indicating they were there — which is why filtering never felt complete. Everything filterable is now in `#filterDlg` under labelled groups (Where / Only show / Meal / Arrange), the sheet hides whichever controls do not apply to the current mode, and the Filters button carries a dot whenever anything is off its default. `activeFilters()` must count every one of them; a filter the badge ignores is a filter the user cannot tell is on.
+
+**The header is a phone budget.** Two sticky rows, about 95px: mark + search + account, then mode + count + Filters (+ the list/map toggle above 700px, where the bottom pill is hidden instead). The old layout spent ~240px before any content. The `<h1>` survives as `.sr` (visually hidden) — the mark carries the identity on screen because a phone cannot spare the row. Group/meal/scope live in a filter sheet, which also shows only the controls that apply to the current mode.
 
 **Two concepts, two presentations, and they are independent.** `state.mode` is *what* you are looking at (`mine` | `explore`); `state.show` is *how* (`cards` | `map`). That crossing is deliberate — "my list on a map" and "search results as a list" are both things people want, and the old five-tab control could express neither. `state.group` (`area` | `day` | `tried`) arranges the list and only applies to `mine`.
 
