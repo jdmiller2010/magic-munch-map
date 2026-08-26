@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#5b3fd6">
+<title>Park food map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f6f6fb;
+    --surface:#ffffff;
+    --surface-2:#f0f0f7;
+    --ink:#191932;
+    --muted:#6c6c86;
+    --line:#e7e7f1;
+    --brand:#5b3fd6;
+    --brand-soft:#ede9fd;
+    --gold:#f0a500;
+    --gold-soft:#fff4d9;
+    --food:#f2603c;
+    --ride:#009e86;
+    --show:#8055ff;
+    --shop:#c07d1f;
+    --shadow:0 1px 2px rgba(25,25,50,.06),0 6px 20px rgba(25,25,50,.07);
+    --shadow-lg:0 8px 30px rgba(25,25,50,.16);
+    --r-lg:20px; --r-md:14px; --r-sm:10px;
+    --safe-b:env(safe-area-inset-bottom,0px);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#111120; --surface:#1a1a2e; --surface-2:#22223c; --ink:#ececf6;
+      --muted:#9a9ab8; --line:#2c2c48; --brand:#8b74ff; --brand-soft:#2a2350;
+      --gold:#ffc247; --gold-soft:#3a2f10;
+      --food:#ff7f5c; --ride:#22c3a6; --show:#a288ff; --shop:#e0a34a;
+      --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
+      --shadow-lg:0 8px 34px rgba(0,0,0,.5);
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg);color:var(--ink);
+    font-family:"Inter",system-ui,-apple-system,sans-serif;font-size:15px;line-height:1.5;
+    -webkit-text-size-adjust:100%;-webkit-font-smoothing:antialiased;
+    padding-bottom:calc(84px + var(--safe-b));
+  }
+  h1,h2,.ttl{font-family:"Outfit",sans-serif;font-weight:700;letter-spacing:-.02em;margin:0}
+  a{color:var(--brand)}
+  button{font-family:inherit}
+  :focus-visible{outline:2px solid var(--brand);outline-offset:2px;border-radius:6px}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
+
+  /* app bar */
+  .appbar{
+    position:sticky;top:0;z-index:600;background:var(--bg);
+    border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))
+  }
+  .barrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px}
+  .appbar h1{font-size:20px}
+  .appbar .sub{font-size:12.5px;color:var(--muted);margin-top:1px;font-weight:500}
+  .count{
+    font-size:12px;font-weight:600;color:var(--brand);background:var(--brand-soft);
+    padding:5px 10px;border-radius:999px;white-space:nowrap
+  }
+
+  /* segmented control */
+  .seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px;margin-bottom:10px}
+  .seg button{
+    flex:1;appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
+    font-size:13px;font-weight:600;padding:8px 4px;border-radius:9px;transition:background .18s,color .18s
+  }
+  .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+  /* map */
+  .mapwrap{padding:12px 16px 0}
+  #map{
+    height:52vh;min-height:300px;border-radius:var(--r-lg);
+    border:1px solid var(--line);box-shadow:var(--shadow);background:var(--surface-2)
+  }
+  .leaflet-container{font-family:"Inter",sans-serif;border-radius:var(--r-lg)}
+  .leaflet-popup-content-wrapper{border-radius:var(--r-md);box-shadow:var(--shadow-lg)}
+
+  /* filters */
+  .chips{
+    display:flex;gap:8px;overflow-x:auto;padding:14px 16px 4px;
+    scrollbar-width:none;-webkit-overflow-scrolling:touch
+  }
+  .chips::-webkit-scrollbar{display:none}
+  .chip{
+    flex:none;appearance:none;cursor:pointer;font-size:13px;font-weight:600;
+    padding:8px 14px;border-radius:999px;border:1px solid var(--line);
+    background:var(--surface);color:var(--muted);display:inline-flex;align-items:center;gap:7px;
+    transition:transform .12s
+  }
+  .chip:active{transform:scale(.96)}
+  .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
+  .chip[data-type="food"] .dot{background:var(--food)}
+  .chip[data-type="ride"] .dot{background:var(--ride)}
+  .chip[data-type="show"] .dot{background:var(--show)}
+  .chip[data-type="shop"] .dot{background:var(--shop)}
+  .chip[aria-pressed="true"]{color:var(--surface);border-color:transparent}
+  .chip[aria-pressed="true"] .dot{background:currentColor;opacity:.85}
+  .chip[data-type="food"][aria-pressed="true"]{background:var(--food)}
+  .chip[data-type="ride"][aria-pressed="true"]{background:var(--ride)}
+  .chip[data-type="show"][aria-pressed="true"]{background:var(--show)}
+  .chip[data-type="shop"][aria-pressed="true"]{background:var(--shop)}
+  .chip[data-must][aria-pressed="true"]{background:var(--gold);color:#2a2000;border-color:transparent}
+
+  .searchbox{padding:10px 16px 0;position:relative}
+  .searchbox svg{position:absolute;left:29px;top:50%;transform:translateY(-45%);color:var(--muted);pointer-events:none}
+  #search{
+    width:100%;font-family:inherit;font-size:15px;padding:11px 14px 11px 40px;
+    border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);
+    color:var(--ink);box-shadow:var(--shadow)
+  }
+  #search::placeholder{color:var(--muted)}
+
+  /* list */
+  .list{padding:6px 16px 0}
+  .group{margin-top:20px}
+  .grouphead{display:flex;align-items:baseline;gap:8px;margin:0 2px 9px}
+  .grouphead .nm{font-family:"Outfit",sans-serif;font-weight:600;font-size:15px}
+  .grouphead .pk{font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em}
+
+  .card{
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+    box-shadow:var(--shadow);padding:13px 13px 12px;margin-bottom:10px;
+    display:flex;gap:12px;align-items:flex-start
+  }
+  .card.must{border-color:var(--gold);background:linear-gradient(0deg,var(--gold-soft),var(--gold-soft))}
+  .swatch{width:34px;height:34px;border-radius:11px;flex:none;display:flex;align-items:center;justify-content:center;color:#fff}
+  .swatch svg{width:18px;height:18px}
+  .card .body{flex:1;min-width:0}
+  .card .name{
+    font-family:"Outfit",sans-serif;font-weight:600;font-size:15.5px;line-height:1.3;
+    background:none;border:0;padding:0;text-align:left;cursor:pointer;color:var(--ink)
+  }
+  .meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+  .tag{
+    font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;
+    background:var(--surface-2);color:var(--muted)
+  }
+  .tag.gold{background:var(--gold);color:#2a2000}
+  .note{margin:7px 0 0;font-size:13.5px;color:var(--muted);word-wrap:break-word}
+  .acts{display:flex;flex-direction:column;gap:6px;flex:none}
+  .iconbtn{
+    appearance:none;width:34px;height:34px;padding:0;cursor:pointer;border-radius:10px;
+    border:1px solid var(--line);background:var(--surface);color:var(--muted);
+    display:flex;align-items:center;justify-content:center;transition:transform .12s
+  }
+  .iconbtn:active{transform:scale(.92)}
+  .iconbtn svg{width:17px;height:17px}
+  .iconbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#2a2000}
+
+  .empty{text-align:center;color:var(--muted);font-size:14px;padding:34px 20px}
+
+  /* tools */
+  .tools{padding:26px 16px 0}
+  .tools h2{font-size:16px;margin-bottom:10px}
+  .btn{
+    appearance:none;cursor:pointer;font-size:13.5px;font-weight:600;padding:10px 15px;
+    margin:0 8px 8px 0;border-radius:var(--r-sm);border:1px solid var(--line);
+    background:var(--surface);color:var(--ink);box-shadow:var(--shadow);transition:transform .12s
+  }
+  .btn:active{transform:scale(.97)}
+  .btn.solid{background:var(--brand);border-color:transparent;color:#fff}
+  .btn[aria-pressed="true"]{background:var(--gold);border-color:transparent;color:#2a2000}
+  .hint{font-size:13px;color:var(--muted);margin:8px 0 0;max-width:58ch}
+
+  /* fab */
+  .fab{
+    position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:700;
+    appearance:none;cursor:pointer;border:0;border-radius:999px;background:var(--brand);color:#fff;
+    font-size:14.5px;font-weight:600;padding:14px 20px;box-shadow:var(--shadow-lg);
+    display:flex;align-items:center;gap:8px;transition:transform .14s
+  }
+  .fab:active{transform:scale(.95)}
+  .fab svg{width:18px;height:18px}
+  .fab[aria-pressed="true"]{background:var(--gold);color:#2a2000}
+
+  /* sheet */
+  dialog{
+    border:0;padding:0;background:var(--surface);color:var(--ink);width:100%;max-width:520px;
+    border-radius:var(--r-lg) var(--r-lg) 0 0;margin:auto auto 0;box-shadow:var(--shadow-lg)
+  }
+  dialog::backdrop{background:rgba(15,15,35,.5)}
+  dialog[open]{animation:rise .24s cubic-bezier(.22,1,.36,1)}
+  @keyframes rise{from{transform:translateY(18px);opacity:.6}to{transform:none;opacity:1}}
+  .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 2px}
+  .sheet{padding:8px 18px calc(20px + var(--safe-b))}
+  .sheet h2{font-size:18px;margin-bottom:14px}
+  .field{margin-bottom:12px}
+  .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+  .field input,.field select,.field textarea{
+    width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);
+    border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink)
+  }
+  .field textarea{resize:vertical;min-height:62px}
+  .err{color:var(--food);font-size:13px;font-weight:600;margin:0 0 10px;display:none}
+  .row{display:flex;gap:10px;margin-top:16px}
+  .row .btn{flex:1;margin:0;text-align:center}
+  @media (min-width:640px){
+    dialog{border-radius:var(--r-lg);margin:auto}
+    .grab{display:none}
+  }
+
+  /* pins */
+  .pin{
+    width:26px;height:26px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+    border:2.5px solid #fff;box-shadow:0 3px 8px rgba(25,25,50,.35);box-sizing:border-box;
+    display:flex;align-items:center;justify-content:center
+  }
+  .pin i{width:7px;height:7px;border-radius:50%;background:#fff;display:block}
+  .pin.must{border-color:var(--gold);box-shadow:0 0 0 3px rgba(240,165,0,.28),0 3px 8px rgba(25,25,50,.35)}
+  .pop{font-family:"Inter",sans-serif;color:#191932}
+  .pop b{font-family:"Outfit",sans-serif;font-size:14.5px;display:block;line-height:1.3}
+  .pop .m{font-size:11.5px;color:#6c6c86;margin-top:2px}
+  .pop .n{margin-top:6px;font-size:13px}
+  .pop .g{display:inline-block;margin-top:7px;background:#f0a500;color:#2a2000;font-size:11px;font-weight:600;padding:3px 9px;border-radius:999px}
+
+  footer{padding:28px 16px 0;font-size:12px;line-height:1.7;color:var(--muted)}
+
+  @media (min-width:860px){
+    .appbar h1{font-size:24px}
+    #map{height:58vh}
+    .list{columns:2;column-gap:22px}
+    .group{break-inside:avoid}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+</style>
+</head>
+<body>
+
+<div class="appbar">
+  <div class="wrap">
+    <div class="barrow">
+      <div>
+        <h1>Park food map</h1>
+        <div class="sub">Where we eat, what we ride</div>
+      </div>
+      <span class="count" id="count">0 places</span>
+    </div>
+    <div class="seg" role="group" aria-label="Choose park">
+      <button type="button" data-park="all" aria-pressed="true">Both</button>
+      <button type="button" data-park="dl" aria-pressed="false">Disneyland</button>
+      <button type="button" data-park="dca" aria-pressed="false">Calif. Adventure</button>
+    </div>
+  </div>
+</div>
+
+<main>
+  <div class="mapwrap"><div id="map"></div></div>
+
+  <div class="chips">
+    <button type="button" class="chip" data-type="food" aria-pressed="true"><span class="dot"></span>Food</button>
+    <button type="button" class="chip" data-type="ride" aria-pressed="true"><span class="dot"></span>Rides</button>
+    <button type="button" class="chip" data-type="show" aria-pressed="true"><span class="dot"></span>Shows</button>
+    <button type="button" class="chip" data-type="shop" aria-pressed="true"><span class="dot"></span>Shops</button>
+    <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
+  </div>
+
+  <div class="searchbox">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="search" type="search" placeholder="Search names and notes" aria-label="Search places">
+  </div>
+
+  <div class="list" id="list"></div>
+
+  <div class="tools wrap">
+    <h2>Manage</h2>
+    <button type="button" class="btn" id="moveBtn" aria-pressed="false">Move pins</button>
+    <button type="button" class="btn solid" id="copyBtn">Copy data file</button>
+    <button type="button" class="btn" id="resetBtn">Reset</button>
+    <p class="hint" id="hint">Changes save to this browser only. To share them, tap <strong>Copy data file</strong> and paste the result into <code>places.js</code>.</p>
+  </div>
+
+  <footer class="wrap">
+    Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
+    Pin positions are approximate &mdash; turn on <em>Move pins</em> and drag any pin to fix it.<br>
+    Not affiliated with, endorsed by, or sponsored by Disney.
+  </footer>
+</main>
+
+<button type="button" class="fab" id="addBtn" aria-pressed="false">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+  <span id="fabLabel">Add pin</span>
+</button>
+
+<dialog id="dlg">
+  <div class="grab"></div>
+  <form method="dialog" class="sheet" id="dlgForm">
+    <h2 id="dlgTitle">Add a pin</h2>
+    <p class="err" id="dlgErr"></p>
+    <div class="field">
+      <label for="fName">Name</label>
+      <input id="fName" type="text" autocomplete="off" placeholder="Blue Bayou">
+    </div>
+    <div class="field">
+      <label for="fType">Type</label>
+      <select id="fType">
+        <option value="food">Food</option>
+        <option value="ride">Ride</option>
+        <option value="show">Show</option>
+        <option value="shop">Shop</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="fLand">Land or area</label>
+      <input id="fLand" type="text" autocomplete="off" placeholder="Frontierland">
+    </div>
+    <div class="field">
+      <label for="fNote">Notes</label>
+      <textarea id="fNote" placeholder="What to order, when to go, who wants it"></textarea>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" id="dlgCancel">Cancel</button>
+      <button type="button" class="btn solid" id="dlgSave">Save</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="places.js"></script>
+<script>
+(function(){
+  var KEY = "parkFoodMap.v1";
+  var COLORS = { food:"#f2603c", ride:"#009e86", show:"#8055ff", shop:"#c07d1f" };
+  var KINDS  = { food:"Food", ride:"Ride", show:"Show", shop:"Shop" };
+  var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
+  var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180] };
+  var ZOOM   = { all:16, dl:17, dca:17 };
+  var GLYPH = {
+    food:'<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>',
+    ride:'<path d="M12 3l2.6 5.6L20 9.4l-4 4 1 6-5-2.8L7 19.4l1-6-4-4 5.4-.8z"/>',
+    show:'<path d="M4 6h16v9H4zM8 20h8M12 15v5"/>',
+    shop:'<path d="M4 8h16l-1.2 11.2a2 2 0 01-2 1.8H7.2a2 2 0 01-2-1.8zM9 8V6a3 3 0 016 0v2"/>'
+  };
+
+  var state = { park:"all", types:{food:true,ride:true,show:true,shop:true}, mustOnly:false, query:"", adding:false, moving:false };
+  var places = load();
+  var markers = {};
+  var pending = null;
+  var editingId = null;
+
+  function load(){
+    var seed = (window.PLACES || []).map(function(p,i){
+      var c = Object.assign({}, p);
+      if(!c.id) c.id = "seed-" + i;
+      return c;
+    });
+    try{
+      var raw = localStorage.getItem(KEY);
+      if(raw){
+        var saved = JSON.parse(raw);
+        if(Array.isArray(saved) && saved.length) return saved;
+      }
+    }catch(e){}
+    return seed;
+  }
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(places)); }catch(e){} }
+
+  function svg(inner, sw){
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+
+           '" stroke-linecap="round" stroke-linejoin="round">'+inner+'</svg>';
+  }
+
+  var map = L.map("map",{scrollWheelZoom:true,zoomControl:true}).setView(CENTER.all, ZOOM.all);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{
+    maxZoom:19,
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  }).addTo(map);
+  map.setMaxBounds([[33.798,-117.933],[33.822,-117.905]]);
+
+  function icon(p){
+    return L.divIcon({
+      className:"",
+      html:'<div class="pin'+(p.must?" must":"")+'" style="background:'+COLORS[p.type]+'"><i></i></div>',
+      iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-22]
+    });
+  }
+
+  function esc(s){
+    return String(s==null?"":s).replace(/[&<>"']/g,function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function popupHtml(p){
+    var bits = [KINDS[p.type], PARKS[p.park], p.land].filter(Boolean).join(" · ");
+    return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
+           (p.note?'<div class="n">'+esc(p.note)+'</div>':'')+
+           (p.must?'<div class="g">Must do</div>':'')+'</div>';
+  }
+
+  function visible(p){
+    if(state.park !== "all" && p.park !== state.park) return false;
+    if(!state.types[p.type]) return false;
+    if(state.mustOnly && !p.must) return false;
+    if(state.query){
+      var hay = (p.name+" "+(p.land||"")+" "+(p.note||"")).toLowerCase();
+      if(hay.indexOf(state.query) === -1) return false;
+    }
+    return true;
+  }
+
+  function drawMarkers(shown){
+    Object.keys(markers).forEach(function(id){ map.removeLayer(markers[id]); });
+    markers = {};
+    shown.forEach(function(p){
+      var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:state.moving,title:p.name});
+      m.bindPopup(popupHtml(p));
+      m.on("dragend",function(e){
+        var ll = e.target.getLatLng();
+        p.lat = +ll.lat.toFixed(5);
+        p.lng = +ll.lng.toFixed(5);
+        save();
+      });
+      m.addTo(map);
+      markers[p.id] = m;
+    });
+  }
+
+  function drawList(shown){
+    var host = document.getElementById("list");
+    host.innerHTML = "";
+
+    if(!shown.length){
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Nothing matches yet. Clear the search or switch a category back on.";
+      host.appendChild(empty);
+      return;
+    }
+
+    var order = [], groups = {};
+    shown.forEach(function(p){
+      var key = p.park + "|" + (p.land || "Unsorted");
+      if(!groups[key]){ groups[key] = []; order.push(key); }
+      groups[key].push(p);
+    });
+
+    order.forEach(function(key){
+      var parts = key.split("|");
+      var g = document.createElement("section");
+      g.className = "group";
+      var h = document.createElement("div");
+      h.className = "grouphead";
+      h.innerHTML = '<span class="nm">'+esc(parts[1])+'</span><span class="pk">'+esc(PARKS[parts[0]]||"")+'</span>';
+      g.appendChild(h);
+      groups[key].forEach(function(p){ g.appendChild(cardFor(p)); });
+      host.appendChild(g);
+    });
+  }
+
+  function cardFor(p){
+    var el = document.createElement("div");
+    el.className = "card" + (p.must ? " must" : "");
+
+    var sw = document.createElement("div");
+    sw.className = "swatch";
+    sw.style.background = COLORS[p.type];
+    sw.innerHTML = svg(GLYPH[p.type] || GLYPH.food, 2);
+    el.appendChild(sw);
+
+    var body = document.createElement("div");
+    body.className = "body";
+
+    var name = document.createElement("button");
+    name.type = "button";
+    name.className = "name";
+    name.textContent = p.name;
+    name.addEventListener("click", function(){ focus(p); });
+    body.appendChild(name);
+
+    var meta = document.createElement("div");
+    meta.className = "meta";
+    var t1 = document.createElement("span");
+    t1.className = "tag";
+    t1.textContent = KINDS[p.type] || "";
+    meta.appendChild(t1);
+    if(p.must){
+      var t2 = document.createElement("span");
+      t2.className = "tag gold";
+      t2.textContent = "Must do";
+      meta.appendChild(t2);
+    }
+    body.appendChild(meta);
+
+    if(p.note){
+      var n = document.createElement("p");
+      n.className = "note";
+      n.textContent = p.note;
+      body.appendChild(n);
+    }
+    el.appendChild(body);
+
+    var acts = document.createElement("div");
+    acts.className = "acts";
+
+    var star = document.createElement("button");
+    star.type = "button";
+    star.className = "iconbtn";
+    star.setAttribute("aria-pressed", p.must ? "true" : "false");
+    star.setAttribute("aria-label", (p.must ? "Unmark " : "Mark ") + p.name + " as a must do");
+    star.innerHTML = svg('<path d="M12 3.6l2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z"/>', 1.8);
+    star.addEventListener("click", function(){ p.must = !p.must; save(); render(); });
+    acts.appendChild(star);
+
+    var edit = document.createElement("button");
+    edit.type = "button";
+    edit.className = "iconbtn";
+    edit.setAttribute("aria-label", "Edit " + p.name);
+    edit.innerHTML = svg('<path d="M4 20h4L19 9a2.1 2.1 0 00-3-3L5 17z"/>', 1.9);
+    edit.addEventListener("click", function(){ openDialog(p); });
+    acts.appendChild(edit);
+
+    var del = document.createElement("button");
+    del.type = "button";
+    del.className = "iconbtn";
+    del.setAttribute("aria-label", "Remove " + p.name);
+    del.innerHTML = svg('<path d="M5 7h14M10 7V5h4v2M8 7l.7 12h6.6L16 7"/>', 1.9);
+    del.addEventListener("click", function(){
+      if(!confirm("Remove " + p.name + "?")) return;
+      places = places.filter(function(x){ return x.id !== p.id; });
+      save(); render();
+    });
+    acts.appendChild(del);
+
+    el.appendChild(acts);
+    return el;
+  }
+
+  function focus(p){
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if(reduce) map.setView([p.lat,p.lng], 18);
+    else map.flyTo([p.lat,p.lng], 18, {duration:.6});
+    var m = markers[p.id];
+    if(m) setTimeout(function(){ m.openPopup(); }, reduce ? 0 : 620);
+    document.getElementById("map").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
+  }
+
+  function render(){
+    var shown = places.filter(visible);
+    drawMarkers(shown);
+    drawList(shown);
+    var must = shown.filter(function(p){ return p.must; }).length;
+    document.getElementById("count").textContent =
+      shown.length + (shown.length === 1 ? " place" : " places") + (must ? " · " + must + " must do" : "");
+  }
+
+  var dlg = document.getElementById("dlg");
+  var err = document.getElementById("dlgErr");
+
+  function openDialog(p){
+    editingId = p ? p.id : null;
+    document.getElementById("dlgTitle").textContent = p ? "Edit pin" : "Add a pin";
+    document.getElementById("fName").value = p ? p.name : "";
+    document.getElementById("fType").value = p ? p.type : "food";
+    document.getElementById("fLand").value = p ? (p.land||"") : "";
+    document.getElementById("fNote").value = p ? (p.note||"") : "";
+    err.style.display = "none";
+    dlg.showModal();
+    document.getElementById("fName").focus();
+  }
+
+  document.getElementById("fName").addEventListener("input", function(){ err.style.display = "none"; });
+  document.getElementById("dlgCancel").addEventListener("click", function(){ pending = null; dlg.close(); });
+
+  document.getElementById("dlgSave").addEventListener("click", function(){
+    var name = document.getElementById("fName").value.trim();
+    if(!name){
+      err.textContent = "Give it a name first.";
+      err.style.display = "block";
+      document.getElementById("fName").focus();
+      return;
+    }
+    var data = {
+      name: name,
+      type: document.getElementById("fType").value,
+      land: document.getElementById("fLand").value.trim() || "Unsorted",
+      note: document.getElementById("fNote").value.trim()
+    };
+    if(editingId){
+      places.forEach(function(p){ if(p.id === editingId) Object.assign(p, data); });
+    }else if(pending){
+      places.push(Object.assign({
+        id: "new-" + Date.now(),
+        park: pending.lat > 33.8095 ? "dl" : "dca",
+        lat: +pending.lat.toFixed(5),
+        lng: +pending.lng.toFixed(5),
+        must: false
+      }, data));
+    }
+    pending = null; editingId = null;
+    save(); render(); dlg.close();
+  });
+
+  document.querySelectorAll(".seg button").forEach(function(b){
+    b.addEventListener("click", function(){
+      state.park = b.dataset.park;
+      document.querySelectorAll(".seg button").forEach(function(o){
+        o.setAttribute("aria-pressed", o === b ? "true" : "false");
+      });
+      map.setView(CENTER[state.park], ZOOM[state.park]);
+      render();
+    });
+  });
+
+  document.querySelectorAll(".chip").forEach(function(c){
+    c.addEventListener("click", function(){
+      var on = c.getAttribute("aria-pressed") === "true";
+      c.setAttribute("aria-pressed", on ? "false" : "true");
+      if(c.hasAttribute("data-must")) state.mustOnly = !on;
+      else state.types[c.dataset.type] = !on;
+      render();
+    });
+  });
+
+  document.getElementById("search").addEventListener("input", function(e){
+    state.query = e.target.value.trim().toLowerCase();
+    render();
+  });
+
+  var addBtn = document.getElementById("addBtn");
+  var fabLabel = document.getElementById("fabLabel");
+  var moveBtn = document.getElementById("moveBtn");
+  var hint = document.getElementById("hint");
+  var HINT_DEFAULT = hint.innerHTML;
+
+  addBtn.addEventListener("click", function(){
+    state.adding = !state.adding;
+    addBtn.setAttribute("aria-pressed", state.adding ? "true" : "false");
+    fabLabel.textContent = state.adding ? "Tap the map" : "Add pin";
+    document.getElementById("map").style.cursor = state.adding ? "crosshair" : "";
+    hint.innerHTML = state.adding ? "Tap anywhere on the map to drop a pin there." : HINT_DEFAULT;
+    if(state.adding){
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      document.getElementById("map").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
+    }
+  });
+
+  moveBtn.addEventListener("click", function(){
+    state.moving = !state.moving;
+    moveBtn.setAttribute("aria-pressed", state.moving ? "true" : "false");
+    moveBtn.textContent = state.moving ? "Done moving" : "Move pins";
+    hint.innerHTML = state.moving ? "Drag any pin to its real spot. Positions save as you go." : HINT_DEFAULT;
+    render();
+  });
+
+  map.on("click", function(e){
+    if(!state.adding) return;
+    pending = e.latlng;
+    state.adding = false;
+    addBtn.setAttribute("aria-pressed","false");
+    fabLabel.textContent = "Add pin";
+    document.getElementById("map").style.cursor = "";
+    hint.innerHTML = HINT_DEFAULT;
+    openDialog(null);
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", function(){
+    var body = places.map(function(p){
+      return "  { name: " + JSON.stringify(p.name) +
+             ", park: " + JSON.stringify(p.park) +
+             ", land: " + JSON.stringify(p.land || "") +
+             ", type: " + JSON.stringify(p.type) +
+             ", lat: " + p.lat + ", lng: " + p.lng +
+             ", must: " + (p.must ? "true" : "false") +
+             ", note: " + JSON.stringify(p.note || "") + " }";
+    }).join(",\n");
+    var text = "window.PLACES = [\n" + body + "\n];\n";
+    var btn = this;
+    function done(ok){
+      btn.textContent = ok ? "Copied" : "Copy failed";
+      setTimeout(function(){ btn.textContent = "Copy data file"; }, 1800);
+    }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ fallback(text, done); });
+    }else{ fallback(text, done); }
+  });
+
+  function fallback(text, done){
+    var ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    var ok = false;
+    try{ ok = document.execCommand("copy"); }catch(e){}
+    document.body.removeChild(ta);
+    done(ok);
+  }
+
+  document.getElementById("resetBtn").addEventListener("click", function(){
+    if(!confirm("Discard everything saved in this browser and reload from places.js?")) return;
+    try{ localStorage.removeItem(KEY); }catch(e){}
+    places = load();
+    render();
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
