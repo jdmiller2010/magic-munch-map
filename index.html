@@ -463,7 +463,7 @@
     </div>
     <div class="field">
       <label for="fLand">Land or area</label>
-      <input id="fLand" type="text" autocomplete="off" placeholder="Frontierland">
+      <select id="fLand"></select>
     </div>
     <div class="two">
       <div class="field">
@@ -528,6 +528,16 @@
   // --food token by hand. Keep them in step.
   var FOOD = "#c64f29";
   var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
+  // Free text let "Main Street" and "Main Street, U.S.A." split into two groups.
+  // Park names drift (Critter Country -> Bayou Country, Pacific Wharf ->
+  // San Fransokyo Square); edit here when they do.
+  var LANDS  = {
+    dl: ["Main Street, U.S.A.", "Adventureland", "New Orleans Square", "Bayou Country",
+         "Frontierland", "Fantasyland", "Mickey's Toontown", "Tomorrowland",
+         "Star Wars: Galaxy's Edge"],
+    dca:["Buena Vista Street", "Hollywood Land", "Avengers Campus", "Cars Land",
+         "San Fransokyo Square", "Paradise Gardens Park", "Pixar Pier", "Grizzly Peak"]
+  };
   // Chronological, which is the order the timeline lays a day out in.
   var MEALS  = [
     { k:"breakfast", label:"Breakfast" },
@@ -970,12 +980,45 @@
     triedBox.hidden = !triedChk.checked;
   });
 
+  function fillLands(park, current){
+    var sel = document.getElementById("fLand");
+    var list = LANDS[park] || [];
+    sel.innerHTML = "";
+    var blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "\u2014 Pick an area \u2014";
+    sel.appendChild(blank);
+    list.forEach(function(l){
+      var o = document.createElement("option");
+      o.value = l;
+      o.textContent = l;
+      sel.appendChild(o);
+    });
+    // Keep a value the preset list does not know about - older free-text
+    // records, or a land that belongs to the other park - rather than
+    // silently rewriting it on save.
+    if(current && list.indexOf(current) === -1){
+      var o2 = document.createElement("option");
+      o2.value = current;
+      o2.textContent = current;
+      sel.appendChild(o2);
+    }
+    sel.value = current || "";
+  }
+
+  var parkSel = document.getElementById("fPark");
+  parkSel.addEventListener("change", function(){
+    var sel = document.getElementById("fLand");
+    var keep = (LANDS[parkSel.value] || []).indexOf(sel.value) === -1 ? "" : sel.value;
+    fillLands(parkSel.value, keep);
+  });
+
   function openDialog(p){
     editingId = p ? p.id : null;
     document.getElementById("dlgTitle").textContent = p ? "Edit place" : "Add a place";
     document.getElementById("fName").value = p ? p.name : "";
     document.getElementById("fPark").value = p ? (p.park || "dl") : "dl";
-    document.getElementById("fLand").value = p ? (p.land||"") : "";
+    fillLands(p ? (p.park || "dl") : "dl", p ? (p.land || "") : "");
     document.getElementById("fMeal").value = p ? (p.meal||"") : "";
     document.getElementById("fDate").value = p ? (p.date||"") : "";
     document.getElementById("fNote").value = p ? (p.note||"") : "";
@@ -1011,7 +1054,7 @@
     var data = {
       name: name,
       park: document.getElementById("fPark").value,
-      land: document.getElementById("fLand").value.trim() || "Unsorted",
+      land: document.getElementById("fLand").value || "Unsorted",
       meal: document.getElementById("fMeal").value,
       date: document.getElementById("fDate").value,
       note: document.getElementById("fNote").value.trim(),
