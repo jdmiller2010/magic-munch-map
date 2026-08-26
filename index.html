@@ -4,7 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5b3fd6">
-<title>Park food map</title>
+<title>Magic Munch Map</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2040%2040%22%3E%3Cdefs%3E%3ClinearGradient%20id%3D%22a%22%20x1%3D%227%22%20y1%3D%224%22%20x2%3D%2231%22%20y2%3D%2234%22%20gradientUnits%3D%22userSpaceOnUse%22%3E%3Cstop%20offset%3D%220%22%20stop-color%3D%22%237b5cff%22%2F%3E%3Cstop%20offset%3D%221%22%20stop-color%3D%22%235b3fd6%22%2F%3E%3C%2FlinearGradient%3E%3Cmask%20id%3D%22b%22%3E%3Crect%20width%3D%2240%22%20height%3D%2240%22%20fill%3D%22%23fff%22%2F%3E%3Ccircle%20cx%3D%2230.2%22%20cy%3D%229.5%22%20r%3D%226.2%22%2F%3E%3Ccircle%20cx%3D%2226.5%22%20cy%3D%222.8%22%20r%3D%223.2%22%2F%3E%3C%2Fmask%3E%3C%2Fdefs%3E%3Cpath%20d%3D%22M19%2036C13%2027%208%2020%208%2014a11%2011%200%201%201%2022%200c0%206-5%2013-11%2022z%22%20fill%3D%22url%28%23a%29%22%20mask%3D%22url%28%23b%29%22%2F%3E%3Ccircle%20cx%3D%2219%22%20cy%3D%2214%22%20r%3D%223.9%22%20fill%3D%22%23fff%22%2F%3E%3Cpath%20d%3D%22M5.2%2023Q5.2%2027%209.2%2027Q5.2%2027%205.2%2031Q5.2%2027%201.2%2027Q5.2%2027%205.2%2023Z%22%20fill%3D%22%23f0a500%22%2F%3E%3C%2Fsvg%3E">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -21,6 +22,8 @@
     --brand-soft:#ede9fd;
     --gold:#f0a500;
     --gold-soft:#fff4d9;
+    --logo-a:#7b5cff;
+    --logo-b:#5b3fd6;
     --food:#f2603c;
     --ride:#009e86;
     --show:#8055ff;
@@ -35,6 +38,7 @@
       --bg:#111120; --surface:#1a1a2e; --surface-2:#22223c; --ink:#ececf6;
       --muted:#9a9ab8; --line:#2c2c48; --brand:#8b74ff; --brand-soft:#2a2350;
       --gold:#ffc247; --gold-soft:#3a2f10;
+      --logo-a:#a288ff; --logo-b:#7b5cff;
       --food:#ff7f5c; --ride:#22c3a6; --show:#a288ff; --shop:#e0a34a;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
       --shadow-lg:0 8px 34px rgba(0,0,0,.5);
@@ -61,11 +65,21 @@
   }
   .barrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:10px}
   .appbar h1{font-size:20px}
+  .appbar h1 .mm{color:var(--food)}
   .appbar .sub{font-size:12.5px;color:var(--muted);margin-top:1px;font-weight:500}
   .count{
     font-size:12px;font-weight:600;color:var(--brand);background:var(--brand-soft);
     padding:5px 10px;border-radius:999px;white-space:nowrap
   }
+
+  /* brand */
+  .brand{display:flex;align-items:center;gap:11px;min-width:0}
+  .brandtext{min-width:0}
+  .mark{flex:none;width:40px;height:40px;display:block}
+  .mark svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 5px rgba(91,63,214,.3))}
+  .mark .tw{transform-box:fill-box;transform-origin:center;animation:tw 2.8s ease-in-out infinite}
+  .mark .tw2{animation-delay:1.4s}
+  @keyframes tw{0%,100%{opacity:.4;transform:scale(.78)}50%{opacity:1;transform:scale(1)}}
 
   /* segmented control */
   .seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px;gap:2px;margin-bottom:10px}
@@ -240,9 +254,30 @@
 <div class="appbar">
   <div class="wrap">
     <div class="barrow">
-      <div>
-        <h1>Park food map</h1>
-        <div class="sub">Where we eat, what we ride</div>
+      <div class="brand">
+        <span class="mark" aria-hidden="true">
+          <svg viewBox="0 0 40 40" fill="none">
+            <defs>
+              <linearGradient id="mmPin" x1="7" y1="4" x2="31" y2="34" gradientUnits="userSpaceOnUse">
+                <stop offset="0" stop-color="var(--logo-a)"/>
+                <stop offset="1" stop-color="var(--logo-b)"/>
+              </linearGradient>
+              <mask id="mmBite">
+                <rect width="40" height="40" fill="#fff"/>
+                <circle cx="30.2" cy="9.5" r="6.2" fill="#000"/>
+                <circle cx="26.5" cy="2.8" r="3.2" fill="#000"/>
+              </mask>
+            </defs>
+            <path d="M19 36C13 27 8 20 8 14a11 11 0 1 1 22 0c0 6-5 13-11 22z" fill="url(#mmPin)" mask="url(#mmBite)"/>
+            <circle cx="19" cy="14" r="3.9" fill="var(--surface)"/>
+            <path class="tw" d="M5.2 23Q5.2 27 9.2 27Q5.2 27 5.2 31Q5.2 27 1.2 27Q5.2 27 5.2 23Z" fill="var(--gold)"/>
+            <path class="tw tw2" d="M33.5 23Q33.5 26 36.5 26Q33.5 26 33.5 29Q33.5 26 30.5 26Q33.5 26 33.5 23Z" fill="var(--gold)"/>
+          </svg>
+        </span>
+        <div class="brandtext">
+          <h1>Magic <span class="mm">Munch</span> Map</h1>
+          <div class="sub">Where we eat, what we ride</div>
+        </div>
       </div>
       <span class="count" id="count">0 places</span>
     </div>
@@ -329,7 +364,8 @@
 <script src="places.js"></script>
 <script>
 (function(){
-  var KEY = "parkFoodMap.v1";
+  var KEY = "magicMunchMap.v1";
+  var LEGACY_KEY = "parkFoodMap.v1";
   var COLORS = { food:"#f2603c", ride:"#009e86", show:"#8055ff", shop:"#c07d1f" };
   var KINDS  = { food:"Food", ride:"Ride", show:"Show", shop:"Shop" };
   var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
@@ -355,7 +391,7 @@
       return c;
     });
     try{
-      var raw = localStorage.getItem(KEY);
+      var raw = localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY);
       if(raw){
         var saved = JSON.parse(raw);
         if(Array.isArray(saved) && saved.length) return saved;
@@ -697,7 +733,7 @@
 
   document.getElementById("resetBtn").addEventListener("click", function(){
     if(!confirm("Discard everything saved in this browser and reload from places.js?")) return;
-    try{ localStorage.removeItem(KEY); }catch(e){}
+    try{ localStorage.removeItem(KEY); localStorage.removeItem(LEGACY_KEY); }catch(e){}
     places = load();
     render();
   });
