@@ -32,6 +32,7 @@
     --gold-soft:#fff2d4;
     --logo-a:#37c3d8;
     --logo-b:#0e8fa8;
+    --chick-bg:#16233a;
     --food:#c64f29;
     --shadow:0 1px 2px rgba(74,54,24,.07),0 6px 20px rgba(74,54,24,.09);
     --shadow-lg:0 10px 34px rgba(74,54,24,.18);
@@ -46,6 +47,8 @@
       --muted:#9ba7b7; --line:#2f3a49; --brand:#3fcde2; --brand-soft:#0d3742; --on-brand:#06272f;
       --gold:#ffc247; --gold-soft:#3d3111;
       --logo-a:#6fe3f2; --logo-b:#2ab4cd;
+      /* lighter, or it vanishes into the dark page behind it */
+      --chick-bg:#2b3956;
       --food:#ff8460;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
       --shadow-lg:0 8px 34px rgba(0,0,0,.5);
@@ -421,7 +424,7 @@
   .chick{
     position:fixed;left:16px;bottom:calc(16px + var(--safe-b));z-index:700;
     appearance:none;cursor:pointer;border:0;border-radius:999px;width:56px;height:56px;
-    background:var(--brand);box-shadow:var(--shadow-lg);padding:0;
+    background:var(--chick-bg);box-shadow:var(--shadow-lg);padding:0;
     display:flex;align-items:center;justify-content:center;
     transition:transform .2s var(--spring)
   }
@@ -687,9 +690,8 @@
       <path d="M8.6 6.4L3.8 6.6l4.5 1.7z" fill="#f5a623"/>
       <path d="M8.5 8.4L5 9.7l3.6.4z" fill="#dd8c14"/>
       <path d="M10.2 10.6c1 .2 1.6 1.5 1 2.5-.7 1-2.4.7-2.5-.6-.1-1 .5-1.8 1.5-1.9z" fill="#e8615a"/>
-      <circle cx="11.6" cy="5.8" r="1.4" fill="#fffdf8"/>
-      <circle cx="11.35" cy="5.9" r=".85" fill="#1a1108"/>
-      <circle cx="11.1" cy="5.6" r=".3" fill="#fff"/>
+      <circle cx="11.7" cy="5.8" r="2.05" fill="#fffdf8"/>
+      <circle cx="11.3" cy="5.95" r=".72" fill="#1a1108"/>
     </g>
   </svg>
 </button>
