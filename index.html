@@ -111,14 +111,45 @@
   .controls{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
   .controls .seg{flex:1;margin-bottom:0;overflow:visible}
 
-  /* Search and filters sit above the map so they are the top of the screen in
-     either view, and stay put while the list scrolls under them. */
+  /* Three tight rows, all of it sticky. The old layout spent about 240px on
+     chrome before any content on a phone; this is roughly 140px, and nothing
+     that matters sits below the fold. */
   .stickybar{
     position:sticky;top:0;z-index:640;background:var(--bg);
-    border-bottom:1px solid var(--line);padding-bottom:10px
+    border-bottom:1px solid var(--line);padding-bottom:8px;
+    padding-top:calc(8px + env(safe-area-inset-top,0px))
   }
-  .stickybar .searchbox{padding-top:10px}
-  .stickybar .chips{padding-bottom:0}
+  .toprow{display:flex;align-items:center;gap:9px}
+  .toprow .mark{width:32px;height:32px}
+  .toprow .searchbox{flex:1;min-width:0;padding:0;position:relative}
+  .toprow .searchbox svg{left:13px;top:50%}
+  .toprow #search{padding:9px 12px 9px 36px;font-size:15px;box-shadow:none}
+  .toprow .acct{padding:8px 11px}
+
+  .moderow{display:flex;align-items:center;gap:9px;margin-top:8px}
+  .moderow .seg{flex:1;margin-bottom:0;min-width:0}
+  .moderow .count{flex:none}
+  .filtbtn{
+    flex:none;appearance:none;cursor:pointer;position:relative;
+    display:flex;align-items:center;gap:6px;white-space:nowrap;
+    font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 11px;
+    border:1px solid var(--line);border-radius:999px;
+    background:var(--surface);color:var(--ink);transition:transform .2s var(--spring)
+  }
+  .filtbtn:active{transform:scale(.95)}
+  .filtbtn svg{width:15px;height:15px}
+  .filtbtn .dot{
+    position:absolute;top:-3px;right:-3px;width:9px;height:9px;
+    border-radius:50%;background:var(--gold);border:2px solid var(--bg)
+  }
+  .stickybar .chips{padding:8px 16px 0}
+
+  /* The title still exists for screen readers and the tab; on screen the mark
+     carries the identity, because a phone cannot spare the row. */
+  .sr{
+    position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0
+  }
 
   /* Google-Maps style: one pill, bottom centre, naming where you are going. */
   .viewpill{
@@ -381,10 +412,13 @@
      The pivot is the base of the neck, and the rotation is negative so the
      beak swings down and to the left - clear of the body, all the way to the
      ground, rather than into its own chest. */
-  .chick .head{transform-box:fill-box;transform-origin:90% 103%;animation:peck 7s ease-in-out infinite}
+  /* The pivot is where the neck meets the body, and the neck is drawn as a
+     wedge straddling that point - so it bends with the head rather than
+     sliding off the body, which is what a longer neck did. */
+  .chick .head{transform-box:fill-box;transform-origin:69% 97%;animation:peck 7s ease-in-out infinite}
   @keyframes peck{
     0%,90%,100%{transform:translateY(0) rotate(0)}
-    95%{transform:translateY(3px) rotate(-58deg)}
+    95%{transform:translateY(3px) rotate(-60deg)}
   }
 
   .fab{animation:bob 3.6s ease-in-out infinite}
@@ -489,11 +523,11 @@
 </head>
 <body>
 
-<div class="appbar">
-  <div class="wrap">
-    <div class="barrow">
-      <div class="brand">
-        <span class="mark" aria-hidden="true">
+</div>
+
+<div class="stickybar">
+  <div class="wrap toprow">
+    <span class="mark" aria-hidden="true">
           <svg viewBox="0 0 40 40" fill="none">
             <defs>
               <linearGradient id="mmPin" x1="7" y1="4" x2="31" y2="34" gradientUnits="userSpaceOnUse">
@@ -516,78 +550,51 @@
             <path class="tw tw2" d="M33.5 23Q33.5 26 36.5 26Q33.5 26 33.5 29Q33.5 26 30.5 26Q33.5 26 33.5 23Z" fill="var(--gold)"/>
           </svg>
         </span>
-        <div class="brandtext">
-          <h1>Magic <span class="mm">Munch</span> Map</h1>
-          <div class="sub">Everything worth eating</div>
-        </div>
-      </div>
-      <div class="barend">
-        <span class="count" id="count">0 places</span>
-        <div class="menuwrap">
-          <button type="button" class="acct" id="acctBtn" aria-haspopup="true" aria-expanded="false">Sign in</button>
-          <div class="menu" id="menu" hidden role="menu">
-            <div class="menutop">
-              <span class="dotstat" id="syncDot"></span>
-              <span class="who" id="syncWho"></span>
-            </div>
-            <p class="msg" id="syncMsg"></p>
-            <button type="button" class="mi" id="authBtn">Sign in with Google</button>
-            <button type="button" class="mi" id="uploadBtn" hidden>Upload</button>
-            <div class="mdiv"></div>
-            <button type="button" class="mi" id="installBtn" hidden>Install app</button>
-            <button type="button" class="mi" id="osmBtn">Load map data</button>
-            <button type="button" class="mi" id="moveBtn" aria-pressed="false">Move pins</button>
-            <button type="button" class="mi" id="copyBtn">Copy backup</button>
-            <div class="mdiv"></div>
-            <button type="button" class="mi danger" id="resetBtn">Erase this browser&rsquo;s data</button>
-            <p class="msg" id="hint"></p>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="controls">
-      <div class="seg" role="group" aria-label="What you are looking at">
-        <button type="button" data-mode="mine" aria-pressed="true">My list</button>
-        <button type="button" data-mode="explore" aria-pressed="false">Explore</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="stickybar">
-  <div class="searchbox">
+    <h1 class="sr">Magic Munch Map</h1>
+    <div class="searchbox">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     <input id="search" type="search" placeholder="Search dishes and places, or a, b, c for any" aria-label="Search">
+    </div>
+    <div class="menuwrap">
+      <button type="button" class="acct" id="acctBtn" aria-haspopup="true" aria-expanded="false">Sign in</button>
+      <div class="menu" id="menu" hidden role="menu">
+        <div class="menutop">
+          <span class="dotstat" id="syncDot"></span>
+          <span class="who" id="syncWho"></span>
+        </div>
+        <p class="msg" id="syncMsg"></p>
+        <button type="button" class="mi" id="authBtn">Sign in with Google</button>
+        <button type="button" class="mi" id="uploadBtn" hidden>Upload</button>
+        <div class="mdiv"></div>
+        <button type="button" class="mi" id="installBtn" hidden>Install app</button>
+        <button type="button" class="mi" id="osmBtn">Load map data</button>
+        <button type="button" class="mi" id="moveBtn" aria-pressed="false">Move pins</button>
+        <button type="button" class="mi" id="copyBtn">Copy backup</button>
+        <div class="mdiv"></div>
+        <button type="button" class="mi danger" id="resetBtn">Erase this browser&rsquo;s data</button>
+        <p class="msg" id="hint"></p>
+      </div>
+    </div>
   </div>
+
+  <div class="wrap moderow">
+    <div class="seg" role="group" aria-label="What you are looking at">
+      <button type="button" data-mode="mine" aria-pressed="true">My list</button>
+      <button type="button" data-mode="explore" aria-pressed="false">Explore</button>
+    </div>
+    <span class="count" id="count">0 places</span>
+    <button type="button" class="filtbtn" id="filterBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
+      <span>Filters</span><span class="dot" id="filterDot" hidden></span>
+    </button>
+  </div>
+
   <div class="chips">
     <button type="button" class="chip" data-park="dl" aria-pressed="true">Disneyland</button>
     <button type="button" class="chip" data-park="dca" aria-pressed="true">Calif. Adventure</button>
     <button type="button" class="chip" data-park="dtd" aria-pressed="true">Downtown Disney</button>
     <button type="button" class="chip sep" data-near aria-pressed="false">Near me</button>
     <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
-  </div>
-  <div class="arrange" id="scopeRow">
-    <select id="scopePick" aria-label="What to explore">
-      <option value="seasonal">Seasonal menu</option>
-      <option value="all">Every dish and place</option>
-    </select>
-  </div>
-  <div class="arrange" id="arrange">
-    <select id="groupBy" aria-label="Group by">
-      <option value="area">By area</option>
-      <option value="day">By day</option>
-      <option value="tried">Tried &amp; to try</option>
-    </select>
-    <select id="mealPick" aria-label="Meal">
-      <option value="">Any meal</option>
-      <option value="breakfast">Breakfast</option>
-      <option value="am">AM Snack</option>
-      <option value="lunch">Lunch</option>
-      <option value="pm">PM Snack</option>
-      <option value="dinner">Dinner</option>
-      <option value="dessert">Dessert</option>
-      <option value="none">Unplanned</option>
-    </select>
   </div>
 </div>
 
@@ -622,25 +629,27 @@
 
 <button type="button" class="chick" id="chickBtn" aria-label="Find everything chicken">
   <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path d="M20.5 19.6c4.8.3 7.9-2.8 8.6-7.6-2.1 3-4.3 3.9-6.2 3.7z" fill="#e0342b"/>
-    <path d="M20 21.5c5.4.7 9-2.2 9.9-7.4-2.4 3.4-5.2 4.4-7.3 4.2z" fill="#ffb020"/>
-    <path d="M19.5 23.3c5 1.2 8.6-1.2 10.2-5.8-2.6 2.8-5.3 3.3-7.4 2.9z" fill="#fffdf8"/>
-    <g stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M13.6 26v2.6M12.2 30l1.4-1.4 1.4 1.4M13.6 28.6v1.6"/>
-      <path d="M17.6 26v2.6M16.2 30l1.4-1.4 1.4 1.4M17.6 28.6v1.6"/>
+    <path d="M18.6 22.4c8 .4 11.4-5.2 9.8-13.4-.4 6.6-3.6 9.9-7.6 10.4z" fill="#1f6f6b"/>
+    <path d="M18.4 23.4c7.4 1.2 11-3.6 10.4-11.2-.9 5.8-3.8 8.6-7.4 8.9z" fill="#e0342b"/>
+    <path d="M18.2 24.4c6.6 1.8 10-1.6 10.2-8.4-1.4 4.8-4 6.6-7.2 6.7z" fill="#ffb020"/>
+    <g stroke="#f0a500" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12.4 26.2v2.6M11 30.3l1.4-1.5 1.4 1.5M12.4 28.8v1.5"/>
+      <path d="M16.8 26.2v2.6M15.4 30.3l1.4-1.5 1.4 1.5M16.8 28.8v1.5"/>
     </g>
-    <ellipse cx="16" cy="20.2" rx="7.7" ry="6.7" fill="#fffdf8"/>
-    <ellipse cx="13.4" cy="20.8" rx="4.1" ry="3.3" fill="#efe6d2"/>
+    <path d="M8 20.8c0-4.1 3.4-7 7.6-7 4.5 0 7.6 2.9 7.6 6.8 0 4-3.3 6.9-7.6 6.9-4.4 0-7.6-2.7-7.6-6.7z" fill="#fffdf8"/>
+    <path d="M9.6 19.8c1.2-2.2 3.4-3 5.4-2.2-.3 2.9-2.3 4.8-4.9 4.8-.5-.9-.7-1.7-.5-2.6z" fill="#efe6d2"/>
     <g class="head">
-      <path d="M10.3 16.8c-1.3-2.3-.4-5.1 2-6.2l3.6 5.8z" fill="#fffdf8"/>
-      <circle cx="10.7" cy="9.6" r="5.1" fill="#fffdf8"/>
-      <path d="M6.4 7.7 8.0 2.3 9.8 6.3 11.6 1.7 13.2 6.1 15.4 2.8 16.2 7.9Z" fill="#e0342b"/>
-      <path d="M5.4 9.2L.8 10.8l4.6 1.7z" fill="#ffb020"/>
-      <path d="M7.3 13.6c1.9.5 1.9 3.2-.4 3.2-2 0-2.3-2.7.4-3.2z" fill="#e0342b"/>
-      <circle cx="9.5" cy="8.8" r="2.3" fill="#fffdf8" stroke="#cbbfa8" stroke-width=".5"/>
-      <circle cx="9" cy="9.1" r="1.3" fill="#1a1108"/>
-      <circle cx="8.55" cy="8.6" r=".5" fill="#fff"/>
-      <circle cx="13.6" cy="11.9" r="1.5" fill="#f6a9a2" opacity=".85"/>
+      <!-- neck: a wedge whose base straddles the pivot at (16.4,17), so it
+           bends with the head instead of sliding off the body -->
+      <path d="M18.4 17.4c-.6-4.6-1.6-7.6-3.9-9.2-2.6 1.8-3.4 5.4-2.4 9.6z" fill="#fffdf8"/>
+      <circle cx="14.9" cy="7.9" r="4.7" fill="#fffdf8"/>
+      <path d="M10.9 5.6c-.9-2.4 1.4-4 2.9-2.2.3-2.7 3.5-2.8 4-.3.9-2 3.7-1.3 3.5 1-.2 2-2 3.4-4 3.6z" fill="#e0342b"/>
+      <path d="M10.5 7.7L5.2 7.9l5 1.8z" fill="#ffb020"/>
+      <path d="M10.4 9.8L6.5 11.2l4 .4z" fill="#e09400"/>
+      <path d="M12.3 12.2c1.1.2 1.8 1.6 1.2 2.7-.7 1.2-2.6.8-2.7-.6-.1-1.1.5-2 1.5-2.1z" fill="#e0342b"/>
+      <circle cx="14" cy="6.9" r="2.3" fill="#fffdf8" stroke="#cbbfa8" stroke-width=".45"/>
+      <circle cx="13.35" cy="7.1" r="1.3" fill="#1a1108"/>
+      <circle cx="12.9" cy="6.6" r=".5" fill="#fff"/>
     </g>
   </svg>
 </button>
@@ -649,6 +658,45 @@
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
   <span id="fabLabel">Add</span>
 </button>
+
+<dialog id="filterDlg">
+  <div class="grab"></div>
+  <div class="sheet">
+    <h2>Filters</h2>
+    <div class="field" id="fScope">
+      <label for="scopePick">Explore shows</label>
+      <select id="scopePick" aria-label="What to explore">
+      <option value="seasonal">Seasonal menu</option>
+      <option value="all">Every dish and place</option>
+    </select>
+    </div>
+    <div class="field" id="fGroup">
+      <label for="groupBy">Group my list by</label>
+      <select id="groupBy" aria-label="Group by">
+      <option value="area">By area</option>
+      <option value="day">By day</option>
+      <option value="tried">Tried &amp; to try</option>
+    </select>
+    </div>
+    <div class="field">
+      <label for="mealPick">Meal</label>
+      <select id="mealPick" aria-label="Meal">
+      <option value="">Any meal</option>
+      <option value="breakfast">Breakfast</option>
+      <option value="am">AM Snack</option>
+      <option value="lunch">Lunch</option>
+      <option value="pm">PM Snack</option>
+      <option value="dinner">Dinner</option>
+      <option value="dessert">Dessert</option>
+      <option value="none">Unplanned</option>
+    </select>
+    </div>
+    <div class="row">
+      <button type="button" class="btn" id="filterClear">Clear</button>
+      <button type="button" class="btn solid" id="filterDone">Done</button>
+    </div>
+  </div>
+</dialog>
 
 <dialog id="dlg">
   <div class="grab"></div>
@@ -1884,6 +1932,19 @@
   window.addEventListener("resize", sizeMap);
   window.addEventListener("orientationchange", function(){ setTimeout(sizeMap, 250); });
 
+  function activeFilters(){
+    var n = 0;
+    if(state.meal) n++;
+    if(state.mode === "mine" && state.group !== "area") n++;
+    if(state.mode === "explore" && state.scope !== "seasonal") n++;
+    return n;
+  }
+
+  function renderFilterBadge(){
+    var dot = document.getElementById("filterDot");
+    if(dot) dot.hidden = activeFilters() === 0;
+  }
+
   function setMode(m){
     state.mode = m;
     document.body.setAttribute("data-mode", m);
@@ -1930,6 +1991,7 @@
       if(state.show === "cards") drawExploreCards(host, hits); else host.innerHTML = "";
       document.getElementById("count").textContent =
         hits.length + (hits.length === 1 ? " result" : " results");
+      renderFilterBadge();
       return;
     }
 
@@ -1942,6 +2004,7 @@
     }else{
       host.innerHTML = "";
     }
+    renderFilterBadge();
     var must = shown.filter(function(p){ return p.must; }).length;
     document.getElementById("count").textContent =
       shown.length + (shown.length === 1 ? " place" : " places") + (must ? " · " + must + " must do" : "");
@@ -2162,6 +2225,22 @@
   document.getElementById("scopePick").addEventListener("change", function(){
     state.scope = document.getElementById("scopePick").value;
     render();
+  });
+
+  var filterDlg = document.getElementById("filterDlg");
+  document.getElementById("filterBtn").addEventListener("click", function(){
+    document.getElementById("fScope").hidden = state.mode !== "explore";
+    document.getElementById("fGroup").hidden = state.mode !== "mine";
+    filterDlg.showModal();
+  });
+  document.getElementById("filterDone").addEventListener("click", function(){ filterDlg.close(); });
+  document.getElementById("filterClear").addEventListener("click", function(){
+    state.meal = ""; state.group = "area"; state.scope = "seasonal";
+    document.getElementById("mealPick").value = "";
+    document.getElementById("groupBy").value = "area";
+    document.getElementById("scopePick").value = "seasonal";
+    render();
+    filterDlg.close();
   });
 
   document.querySelectorAll(".chip").forEach(function(c){

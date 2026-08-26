@@ -80,6 +80,8 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 ### Catalogs, and the shape of the app
 
+**The header is a phone budget.** Three sticky rows, about 140px: mark + search + account, then mode + count + Filters, then the chips. The old layout spent ~240px before any content. The `<h1>` survives as `.sr` (visually hidden) — the mark carries the identity on screen because a phone cannot spare the row. Group/meal/scope live in a filter sheet, which also shows only the controls that apply to the current mode.
+
 **Two concepts, two presentations, and they are independent.** `state.mode` is *what* you are looking at (`mine` | `explore`); `state.show` is *how* (`cards` | `map`). That crossing is deliberate — "my list on a map" and "search results as a list" are both things people want, and the old five-tab control could express neither. `state.group` (`area` | `day` | `tried`) arranges the list and only applies to `mine`.
 
 Filters were cut from twelve chips to five (three parks, Near me, Must do) plus two selects (group, meal). Meal became a select because it only matters when planning; Near me is a *sort*, not a filter, and reorders `mine` into one distance-ordered list.
