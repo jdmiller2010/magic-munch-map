@@ -218,6 +218,9 @@
   .iconbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#2a2000}
 
   .empty{text-align:center;color:var(--muted);font-size:14px;padding:34px 20px}
+  .card.ghost{border-style:dashed;background:transparent;box-shadow:none}
+  .card.ghost .name{cursor:default}
+  .acts.one{grid-template-columns:34px}
 
   /* tools */
   .tools{padding:26px 16px 0}
@@ -231,6 +234,28 @@
   .btn.solid{background:var(--brand);border-color:transparent;color:var(--on-brand)}
   .btn[aria-pressed="true"]{background:var(--gold);border-color:transparent;color:#2a2000}
   .hint{font-size:13px;color:var(--muted);margin:8px 0 0;max-width:58ch}
+
+  /* account menu */
+  .menuwrap{position:relative;flex:none}
+  .menu{
+    position:absolute;right:0;top:calc(100% + 8px);z-index:800;width:252px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);
+    box-shadow:var(--shadow-lg);padding:8px
+  }
+  .menutop{display:flex;align-items:center;gap:8px;padding:4px 8px 0}
+  .menu .who{font-size:12.5px;color:var(--muted);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .menu .msg{font-size:12px;color:var(--muted);margin:6px 8px 4px;line-height:1.45}
+  .menu .msg:empty{display:none}
+  .mi{
+    display:block;width:100%;text-align:left;appearance:none;border:0;cursor:pointer;
+    background:transparent;color:var(--ink);font-family:inherit;font-size:14px;font-weight:600;
+    padding:10px 8px;border-radius:var(--r-sm)
+  }
+  .mi:hover,.mi:focus{background:var(--surface-2)}
+  .mi[aria-pressed="true"]{background:var(--gold);color:#2a2000}
+  .mi.danger{color:var(--food)}
+  .mi.danger.armed{background:var(--food);color:#fff}
+  .mdiv{height:1px;background:var(--line);margin:6px 4px}
 
   /* sync panel */
   [hidden]{display:none!important}
@@ -387,7 +412,25 @@
       </div>
       <div class="barend">
         <span class="count" id="count">0 places</span>
-        <button type="button" class="acct" id="acctBtn" hidden>Sign in</button>
+        <div class="menuwrap">
+          <button type="button" class="acct" id="acctBtn" aria-haspopup="true" aria-expanded="false">Sign in</button>
+          <div class="menu" id="menu" hidden role="menu">
+            <div class="menutop">
+              <span class="dotstat" id="syncDot"></span>
+              <span class="who" id="syncWho"></span>
+            </div>
+            <p class="msg" id="syncMsg"></p>
+            <button type="button" class="mi" id="authBtn">Sign in with Google</button>
+            <button type="button" class="mi" id="uploadBtn" hidden>Upload</button>
+            <div class="mdiv"></div>
+            <button type="button" class="mi" id="osmBtn">Load map data</button>
+            <button type="button" class="mi" id="moveBtn" aria-pressed="false">Move pins</button>
+            <button type="button" class="mi" id="copyBtn">Copy backup</button>
+            <div class="mdiv"></div>
+            <button type="button" class="mi danger" id="resetBtn">Erase this browser&rsquo;s data</button>
+            <p class="msg" id="hint"></p>
+          </div>
+        </div>
       </div>
     </div>
     <div class="seg" role="group" aria-label="View">
@@ -411,6 +454,7 @@
   <div class="chips">
     <button type="button" class="chip" data-park="dl" aria-pressed="true">Disneyland</button>
     <button type="button" class="chip" data-park="dca" aria-pressed="true">Calif. Adventure</button>
+    <button type="button" class="chip" data-park="dtd" aria-pressed="true">Downtown Disney</button>
     <button type="button" class="chip sep" data-must aria-pressed="false">Must do</button>
     <button type="button" class="chip" data-meal="breakfast" aria-pressed="true">Breakfast</button>
     <button type="button" class="chip" data-meal="am" aria-pressed="true">AM Snack</button>
@@ -426,28 +470,6 @@
   </div>
 
   <div class="list" id="list"></div>
-
-  <div class="tools wrap">
-    <h2>Manage</h2>
-
-    <div class="sync" id="sync">
-      <div class="top">
-        <span class="dotstat" id="syncDot"></span>
-        <span class="lbl">Cloud sync</span>
-        <span class="who" id="syncWho"></span>
-        <span class="spacer"></span>
-        <button type="button" class="btn" id="uploadBtn" hidden>Upload local list</button>
-        <button type="button" class="btn" id="authBtn" hidden>Sign in with Google</button>
-      </div>
-      <p class="msg" id="syncMsg"></p>
-    </div>
-
-    <button type="button" class="btn" id="osmBtn">Load park venues</button>
-    <button type="button" class="btn" id="moveBtn" aria-pressed="false">Move pins</button>
-    <button type="button" class="btn solid" id="copyBtn">Copy backup</button>
-    <button type="button" class="btn" id="resetBtn">Reset</button>
-    <p class="hint" id="hint">Changes save to this browser only. Sign in above to share one live list across devices.</p>
-  </div>
 
   <footer class="wrap">
     Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
@@ -477,6 +499,7 @@
       <select id="fPark">
         <option value="dl">Disneyland</option>
         <option value="dca">California Adventure</option>
+        <option value="dtd">Downtown Disney</option>
       </select>
     </div>
     <div class="field">
@@ -545,7 +568,7 @@
   // Leaflet injects markers outside the themed tree, so this mirrors the
   // --food token by hand. Keep them in step.
   var FOOD = "#c64f29";
-  var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
+  var PARKS  = { dl:"Disneyland", dca:"California Adventure", dtd:"Downtown Disney" };
   // Free text let "Main Street" and "Main Street, U.S.A." split into two groups.
   // Park names drift (Critter Country -> Bayou Country, Pacific Wharf ->
   // San Fransokyo Square); edit here when they do.
@@ -554,7 +577,9 @@
          "Frontierland", "Fantasyland", "Mickey's Toontown", "Tomorrowland",
          "Star Wars: Galaxy's Edge"],
     dca:["Buena Vista Street", "Hollywood Land", "Avengers Campus", "Cars Land",
-         "San Fransokyo Square", "Paradise Gardens Park", "Pixar Pier", "Grizzly Peak"]
+         "San Fransokyo Square", "Paradise Gardens Park", "Pixar Pier", "Grizzly Peak"],
+    dtd:["Downtown Disney District", "Disneyland Hotel", "Grand Californian Hotel",
+         "Pixar Place Hotel"]
   };
   // Chronological, which is the order the timeline lays a day out in.
   var MEALS  = [
@@ -566,13 +591,13 @@
   ];
   var MEAL_LABEL = {}, MEAL_ORDER = {};
   MEALS.forEach(function(m, i){ MEAL_LABEL[m.k] = m.label; MEAL_ORDER[m.k] = i; });
-  var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180] };
-  var ZOOM   = { all:16, dl:17, dca:17 };
+  var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180], dtd:[33.8090,-117.9235] };
+  var ZOOM   = { all:16, dl:17, dca:17, dtd:17 };
   var GLYPH = '<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>';
 
   var state = {
     view:"list",
-    parks:{ dl:true, dca:true },
+    parks:{ dl:true, dca:true, dtd:true },
     meals:{ breakfast:true, am:true, lunch:true, pm:true, dinner:true, none:true },
     mustOnly:false, query:"", moving:false
   };
@@ -626,7 +651,22 @@
 
   var OSM_KEY  = "magicMunchMap.osm.v1";
   var OSM_AMEN = "^(restaurant|fast_food|cafe|ice_cream|bar|pub|biergarten)$";
-  var OSM_AREA = [ { k:"dl", area:"Disneyland" }, { k:"dca", area:"Disney California Adventure" } ];
+  var OSM_AREA = [
+    { k:"dl",  sel:'["tourism"="theme_park"]["name"="Disneyland"]' },
+    { k:"dca", sel:'["tourism"="theme_park"]["name"="Disney California Adventure"]' },
+    // Downtown Disney is not a theme park; it is mapped as retail landuse.
+    { k:"dtd", sel:'["landuse"="retail"]["name"="Downtown Disney"]' }
+  ];
+  var KINDS = {
+    restaurant:"Table service", fast_food:"Quick service", cafe:"Cafe",
+    ice_cream:"Ice cream", bar:"Bar", pub:"Pub", biergarten:"Beer garden"
+  };
+  function tidy(str){
+    return String(str || "").split(";")[0].replace(/_/g, " ").replace(/^./, function(c){ return c.toUpperCase(); });
+  }
+  function venueBlurb(v){
+    return [KINDS[v.kind] || tidy(v.kind), tidy(v.cuisine), PARKS[v.park]].filter(Boolean).join(" · ");
+  }
   var venues = [];
   var venuesFetched = "";
   var fetching = false;
@@ -647,7 +687,7 @@
     var out = [], pending = OSM_AREA.length, failed = false;
 
     OSM_AREA.forEach(function(pk){
-      var q = '[out:json][timeout:60];area["tourism"="theme_park"]["name"="' + pk.area + '"]->.p;' +
+      var q = '[out:json][timeout:60];area' + pk.sel + '->.p;' +
               '(node(area.p)["amenity"~"' + OSM_AMEN + '"]["name"];' +
               ' way(area.p)["amenity"~"' + OSM_AMEN + '"]["name"];);out center tags;';
       fetch("https://overpass-api.de/api/interpreter", {
@@ -660,7 +700,13 @@
           var la = e.lat !== undefined ? e.lat : (e.center && e.center.lat);
           var ln = e.lon !== undefined ? e.lon : (e.center && e.center.lon);
           if(t.name && typeof la === "number" && typeof ln === "number"){
-            out.push({ name:t.name, lat:+la.toFixed(5), lng:+ln.toFixed(5), park:pk.k });
+            var v = { name:t.name, lat:+la.toFixed(5), lng:+ln.toFixed(5), park:pk.k };
+            if(t.amenity) v.kind = t.amenity;                       // restaurant vs fast_food etc
+            if(t.cuisine) v.cuisine = t.cuisine;
+            if(t.website) v.website = t.website;
+            if(t["mobile_ordering"] === "yes") v.mobile = true;      // Disney mobile order
+            if(t["outdoor_seating"] === "yes") v.outdoor = true;
+            out.push(v);
           }
         });
         step();
@@ -678,12 +724,49 @@
       });
       list.sort(function(a,b){ return a.name.localeCompare(b.name); });
       if(list.length){
-        venues = list;
-        venuesFetched = new Date().toISOString();
-        try{ localStorage.setItem(OSM_KEY, JSON.stringify({ fetched:venuesFetched, venues:list })); }catch(e){}
+        setVenues(list, new Date().toISOString());
+        pushVenues();          // share it, so nobody else has to fetch
       }
       done(list.length, failed);
     }
+  }
+
+  // Three zones now, so a latitude threshold cannot separate them. Ask the
+  // venue data which zone the closest mapped thing belongs to instead.
+  function setVenues(list, fetched){
+    venues = list;
+    venuesFetched = fetched || "";
+    try{ localStorage.setItem(OSM_KEY, JSON.stringify({ fetched:venuesFetched, venues:list })); }catch(e){}
+    renderOsm();
+  }
+
+  // The venue list is identical for everyone, so it lives in one shared
+  // document. The first signed-in device to find it missing fetches it from
+  // Overpass and writes it; every device after that just reads it.
+  function pushVenues(){
+    if(!(cloud.on && cloud.user) || !venues.length) return;
+    cloud.db.collection("venues").doc("all")
+      .set({ fetched: venuesFetched, list: venues })
+      .then(null, function(){});
+  }
+
+  function watchVenues(){
+    if(cloud.venueUnsub){ cloud.venueUnsub(); cloud.venueUnsub = null; }
+    cloud.venueUnsub = cloud.db.collection("venues").doc("all").onSnapshot(function(snap){
+      var d = snap.exists ? snap.data() : null;
+      if(d && d.list && d.list.length){
+        setVenues(d.list, d.fetched);
+      }else if(!fetching && !venues.length){
+        fetchVenues(function(){});      // nobody has populated it yet
+      }else if(!fetching && venues.length){
+        pushVenues();                   // we have a local copy; seed the shared one
+      }
+    }, function(){});
+  }
+
+  function nearestPark(lat, lng){
+    var n = nearestVenue(lat, lng, Infinity);
+    return n ? n.v.park : "dl";
   }
 
   function nearestVenue(lat, lng, maxMetres){
@@ -765,6 +848,75 @@
       : "Nothing here yet. Tap Add to start the list.";
   }
 
+  // Searching covers the shared venue list too, so a place you have not saved
+  // yet is still findable - and one tap away from being on the list.
+  function venueHits(){
+    if(!state.query || state.query.length < 2) return [];
+    var have = {};
+    places.forEach(function(p){ have[String(p.name || "").toLowerCase()] = true; });
+    return venues.filter(function(v){
+      if(!state.parks[v.park]) return false;
+      if(have[v.name.toLowerCase()]) return false;
+      return (v.name + " " + (v.cuisine || "")).toLowerCase().indexOf(state.query) !== -1;
+    }).slice(0, 8);
+  }
+
+  function addVenue(v){
+    var p = {
+      id: "new-" + Date.now(), name: v.name, park: v.park, land: "Unsorted",
+      meal: "", date: "", lat: v.lat, lng: v.lng, must: false, note: "",
+      tried: false, visited: "", rating: 0, verdict: "",
+      kind: v.kind || "", cuisine: v.cuisine || "", website: v.website || "",
+      mobile: !!v.mobile, outdoor: !!v.outdoor, ord: nextOrd()
+    };
+    places.push(p);
+    persist(p);
+    render();
+  }
+
+  function drawVenueHits(host){
+    var hits = venueHits();
+    if(!hits.length) return;
+    var sec = document.createElement("section");
+    sec.className = "group";
+    var h = document.createElement("div");
+    h.className = "dayhead";
+    h.innerHTML = '<span class="nm">Not on your list</span><span class="ct">' + hits.length + '</span>';
+    sec.appendChild(h);
+    hits.forEach(function(v){
+      var el = document.createElement("div");
+      el.className = "card ghost";
+      var sw = document.createElement("div");
+      sw.className = "swatch";
+      sw.style.background = FOOD;
+      sw.innerHTML = svg(GLYPH, 2);
+      el.appendChild(sw);
+      var body = document.createElement("div");
+      body.className = "body";
+      var nm = document.createElement("div");
+      nm.className = "name";
+      nm.textContent = v.name;
+      body.appendChild(nm);
+      var sub = document.createElement("p");
+      sub.className = "note";
+      sub.textContent = venueBlurb(v);
+      body.appendChild(sub);
+      el.appendChild(body);
+      var acts = document.createElement("div");
+      acts.className = "acts one";
+      var add = document.createElement("button");
+      add.type = "button";
+      add.className = "iconbtn";
+      add.setAttribute("aria-label", "Add " + v.name + " to the list");
+      add.innerHTML = svg('<path d="M12 5v14M5 12h14"/>', 2.2);
+      add.addEventListener("click", function(){ addVenue(v); });
+      acts.appendChild(add);
+      el.appendChild(acts);
+      sec.appendChild(el);
+    });
+    host.appendChild(sec);
+  }
+
   function drawList(shown){
     var host = document.getElementById("list");
     host.innerHTML = "";
@@ -774,6 +926,7 @@
       empty.className = "empty";
       empty.textContent = emptyMsg();
       host.appendChild(empty);
+      drawVenueHits(host);
       return;
     }
 
@@ -795,6 +948,7 @@
       groups[key].forEach(function(p){ g.appendChild(cardFor(p)); });
       host.appendChild(g);
     });
+    drawVenueHits(host);
   }
 
   function drawTimeline(shown){
@@ -914,6 +1068,9 @@
     body.appendChild(name);
 
     var tags = [];
+    if(p.kind) tags.push(["tag", KINDS[p.kind] || tidy(p.kind)]);
+    if(p.cuisine) tags.push(["tag", tidy(p.cuisine)]);
+    if(p.mobile) tags.push(["tag", "Mobile order"]);
     if(p.meal) tags.push(["tag meal", MEAL_LABEL[p.meal]]);
     if(p.date && fmtDate(p.date)) tags.push(["tag", fmtDate(p.date)]);
     if(!hasCoords(p)) tags.push(["tag nowhere", "No pin yet"]);
@@ -1010,9 +1167,8 @@
 
   function cancelPlacement(){
     placingId = null;
-    document.getElementById("placebar").hidden = true;
+    if(!state.moving) document.getElementById("placebar").hidden = true;
     document.getElementById("map").style.cursor = "";
-    hint.innerHTML = defaultHint();
   }
 
   function setView(v){
@@ -1116,11 +1272,12 @@
   function openDialog(p, seed){
     editingId = p ? p.id : null;
     sheetCoords = seed && seed.lat !== undefined ? { lat:seed.lat, lng:seed.lng } : null;
+    sheetMeta = seed && seed.meta ? seed.meta : null;
     dlgNote.textContent = seed && seed.note ? seed.note : "";
     hideSuggest();
-    // First time the sheet is opened, pull the venue list so the name field
-    // can autocomplete. One request pair, then cached indefinitely.
-    if(!venues.length && !fetching) fetchVenues(function(){ renderOsm(); });
+    // Signed in, watchVenues() has already supplied these from the shared
+    // document. Signed out with an empty cache, fetch them once.
+    if(!venues.length && !fetching && !(cloud.on && cloud.user)) fetchVenues(function(){});
     document.getElementById("dlgTitle").textContent = p ? "Edit place" : "Add a place";
     fNameEl.value = p ? p.name : (seed && seed.name ? seed.name : "");
     var pk = p ? (p.park || "dl") : (seed && seed.park ? seed.park : "dl");
@@ -1144,6 +1301,7 @@
   var acbox   = document.getElementById("acbox");
   var dlgNote = document.getElementById("dlgNote");
   var sheetCoords = null;    // set by picking a venue, or by dropping a pin
+  var sheetMeta = null;      // venue details copied across when one is picked
 
   function hideSuggest(){ acbox.hidden = true; acbox.innerHTML = ""; }
 
@@ -1152,7 +1310,11 @@
     parkSel.value = v.park;
     fillLands(v.park, document.getElementById("fLand").value);
     sheetCoords = { lat:v.lat, lng:v.lng };   // the surveyed position, not a guess
-    dlgNote.textContent = "Using the OpenStreetMap position for " + v.name + ".";
+    sheetMeta = {
+      kind: v.kind || "", cuisine: v.cuisine || "",
+      website: v.website || "", mobile: !!v.mobile, outdoor: !!v.outdoor
+    };
+    dlgNote.textContent = venueBlurb(v) + (v.mobile ? " · Mobile order" : "");
     hideSuggest();
     err.style.display = "none";
   }
@@ -1168,7 +1330,7 @@
     hits.forEach(function(v){
       var b = document.createElement("button");
       b.type = "button";
-      b.innerHTML = esc(v.name) + '<span class="sub">' + esc(PARKS[v.park]) + '</span>';
+      b.innerHTML = esc(v.name) + '<span class="sub">' + esc(venueBlurb(v)) + '</span>';
       b.addEventListener("click", function(){ pickVenue(v); });
       acbox.appendChild(b);
     });
@@ -1223,10 +1385,22 @@
       target.lng = sheetCoords.lng;
       fields = fields.concat(["lat","lng"]);
     }
-    editingId = null; sheetCoords = null;
+    if(target && sheetMeta){
+      target.kind = sheetMeta.kind;
+      target.cuisine = sheetMeta.cuisine;
+      target.website = sheetMeta.website;
+      target.mobile = sheetMeta.mobile;
+      target.outdoor = sheetMeta.outdoor;
+      fields = fields.concat(["kind","cuisine","website","mobile","outdoor"]);
+    }
+    editingId = null; sheetCoords = null; sheetMeta = null;
     hideSuggest();
     if(target) persist(target, editedExisting ? fields : null); else save();
     render(); dlg.close();
+  });
+
+  document.getElementById("placeCancel").addEventListener("click", function(){
+    if(state.moving) moveBtn.click(); else cancelPlacement();
   });
 
   document.querySelectorAll(".seg button").forEach(function(b){
@@ -1253,13 +1427,7 @@
   var addBtn = document.getElementById("addBtn");
   var moveBtn = document.getElementById("moveBtn");
   var hint = document.getElementById("hint");
-  var HINT_DEFAULT = hint.innerHTML;
 
-  function defaultHint(){
-    return cloud.user
-      ? "Signed in. Changes save to the shared list and show up on every signed-in device."
-      : HINT_DEFAULT;
-  }
 
   // Adding no longer requires a map tap: a place can live in the list with no
   // pin at all and get one later from the target button on its card.
@@ -1300,8 +1468,15 @@
     state.moving = !state.moving;
     if(state.moving) setView("map");
     moveBtn.setAttribute("aria-pressed", state.moving ? "true" : "false");
-    moveBtn.textContent = state.moving ? "Done moving" : "Move pins";
-    hint.innerHTML = state.moving ? "Drag any pin to its real spot. Positions save as you go." : defaultHint();
+    moveBtn.textContent = state.moving ? "Done moving pins" : "Move pins";
+    if(state.moving){
+      setView("map");
+      document.getElementById("placeMsg").textContent = "Drag any pin to its real spot. Positions save as you go.";
+      document.getElementById("placebar").hidden = false;
+    }else if(!placingId){
+      document.getElementById("placebar").hidden = true;
+    }
+    closeMenu();
     render();
   });
 
@@ -1320,7 +1495,10 @@
       openDialog(null, {
         lat: lat, lng: lng,
         name: near ? near.v.name : "",
-        park: near ? near.v.park : (lat > 33.8095 ? "dl" : "dca"),
+        park: near ? near.v.park : nearestPark(lat, lng),
+        meta: near ? { kind:near.v.kind || "", cuisine:near.v.cuisine || "",
+                       website:near.v.website || "", mobile:!!near.v.mobile,
+                       outdoor:!!near.v.outdoor } : null,
         note: near
           ? "Nearest mapped venue is " + near.v.name + ", " + near.d + "m away. Clear the name and type your own if that is not it."
           : "No mapped venue within 60m, so the pin stays exactly where you tapped. Give it any name you like."
@@ -1358,19 +1536,43 @@
     done(ok);
   }
 
-  document.getElementById("resetBtn").addEventListener("click", function(){
-    if(cloud.on && cloud.user){
-      // Firestore owns the list here; clearing localStorage must not blank it.
-      if(!confirm("You are signed in, so this clears only this browser's offline copy. The shared list is untouched. Continue?")) return;
-      try{ localStorage.removeItem(KEY); localStorage.removeItem(LEGACY_KEY); }catch(e){}
-      cloud.err = "Local copy cleared. The shared list is unchanged.";
-      renderSync();
+  var resetBtn = document.getElementById("resetBtn");
+  var resetArmed = false, resetTimer = null;
+
+  function disarmReset(){
+    resetArmed = false;
+    if(resetTimer){ clearTimeout(resetTimer); resetTimer = null; }
+    resetBtn.className = "mi danger";
+    resetBtn.textContent = "Erase this browser’s data";
+  }
+
+  resetBtn.addEventListener("click", function(){
+    var signedIn = !!(cloud.on && cloud.user);
+
+    // Two deliberate taps with the count spelled out. A single confirm() is
+    // far too easy to dismiss for something that has no undo.
+    if(!resetArmed){
+      resetArmed = true;
+      resetBtn.className = "mi danger armed";
+      resetBtn.textContent = signedIn
+        ? "Tap again — clears the offline copy only"
+        : "Tap again — erases " + places.length + " place" + (places.length === 1 ? "" : "s") + " for good";
+      hint.textContent = signedIn
+        ? "You are signed in, so the shared list is safe. This only drops what this browser has cached."
+        : "You are NOT signed in, so this browser is the only copy. There is no undo. Use Copy backup first if you want one.";
+      resetTimer = setTimeout(disarmReset, 6000);
       return;
     }
-    if(!confirm("Discard everything saved in this browser?")) return;
+
+    disarmReset();
     try{ localStorage.removeItem(KEY); localStorage.removeItem(LEGACY_KEY); }catch(e){}
+    if(signedIn){
+      hint.textContent = "Offline copy cleared. The shared list is unchanged.";
+      return;
+    }
     places = load();
     render();
+    hint.textContent = "Erased.";
   });
 
   /* ---------- cloud sync (optional) ----------
@@ -1380,8 +1582,8 @@
      writes one document, so two phones editing different pins merge
      instead of clobbering each other. */
 
-  var cloud = { on:false, db:null, user:null, unsub:null, empty:false, cache:false, err:"" };
-  var FIELDS = ["name","park","land","meal","date","lat","lng","must","note","tried","visited","rating","verdict","ord"];
+  var cloud = { on:false, db:null, user:null, unsub:null, venueUnsub:null, empty:false, cache:false, err:"" };
+  var FIELDS = ["name","park","land","meal","date","lat","lng","must","note","tried","visited","rating","verdict","kind","cuisine","website","mobile","outdoor","ord"];
 
   var syncDot   = document.getElementById("syncDot");
   var syncWho   = document.getElementById("syncWho");
@@ -1416,7 +1618,8 @@
       syncDot.className = "dotstat";
       authBtn.hidden = true;
       uploadBtn.hidden = true;
-      acctBtn.hidden = true;
+      acctBtn.className = "acct";
+      acctBtn.textContent = "Menu";
       if(!window.FIREBASE_CONFIG){
         syncWho.textContent = "Not set up — saving to this browser only.";
         syncMsgEl.textContent = cloud.err ||
@@ -1432,14 +1635,13 @@
       return;
     }
     authBtn.hidden = false;
-    acctBtn.hidden = false;
     if(cloud.user){
       syncDot.className = "dotstat " + (!cloud.on ? "" : cloud.cache ? "warn" : "ok");
       syncWho.textContent = cloud.user.email || "Signed in";
       authBtn.textContent = "Sign out";
       acctBtn.className = "acct in";
       acctBtn.textContent = (cloud.user.email || "?").charAt(0).toUpperCase();
-      acctBtn.setAttribute("aria-label", "Signed in as " + (cloud.user.email || "") + " — go to sync settings");
+      acctBtn.setAttribute("aria-label", "Menu — signed in as " + (cloud.user.email || ""));
       var localCount = load().length;
       uploadBtn.hidden = localCount === 0;
       uploadBtn.textContent = "Upload " + localCount + " from this browser";
@@ -1452,11 +1654,10 @@
       authBtn.textContent = "Sign in with Google";
       acctBtn.className = "acct";
       acctBtn.textContent = "Sign in";
-      acctBtn.setAttribute("aria-label", "Sign in with Google to sync");
+      acctBtn.setAttribute("aria-label", "Menu — signed out");
       uploadBtn.hidden = true;
       syncMsgEl.textContent = cloud.err || "";
     }
-    if(!placingId && !state.moving) hint.innerHTML = defaultHint();
   }
 
   function startWatch(){
@@ -1502,6 +1703,7 @@
 
   function stopWatch(){
     if(cloud.unsub){ cloud.unsub(); cloud.unsub = null; }
+    if(cloud.venueUnsub){ cloud.venueUnsub(); cloud.venueUnsub = null; }
     cloud.on = false;
   }
 
@@ -1551,9 +1753,9 @@
   function renderOsm(){
     if(!osmBtn) return;
     osmBtn.disabled = fetching;
-    osmBtn.textContent = fetching ? "Loading\u2026"
-      : venues.length ? "Refresh park venues (" + venues.length + ")"
-      : "Load park venues";
+    osmBtn.textContent = fetching ? "Resyncing\u2026"
+      : venues.length ? "Resync map data (" + venues.length + ")"
+      : "Load map data";
   }
 
   if(osmBtn) osmBtn.addEventListener("click", function(){
@@ -1561,21 +1763,34 @@
     fetchVenues(function(n, failed){
       renderOsm();
       hint.textContent = n
-        ? n + " venues loaded from OpenStreetMap" + (failed ? " (one park failed; try again)" : "") +
-          ". They power the name suggestions and the nearest-venue prefill."
+        ? n + " venues loaded from OpenStreetMap" + (failed ? " (one area failed; try again)" : "") +
+          (cloud.on && cloud.user ? " and shared with everyone signed in." : ".")
         : "Could not reach OpenStreetMap. The list still works, you just have to type names yourself.";
     });
     fetching = true;
     renderOsm();
   });
 
-  if(acctBtn) acctBtn.addEventListener("click", function(){
-    if(cloud.user){
-      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      document.getElementById("sync").scrollIntoView({behavior: reduce ? "auto" : "smooth", block:"center"});
-    }else if(authBtn){
-      authBtn.click();
-    }
+  var menu = document.getElementById("menu");
+
+  function closeMenu(){
+    menu.hidden = true;
+    acctBtn.setAttribute("aria-expanded", "false");
+    disarmReset();
+  }
+  function openMenu(){
+    menu.hidden = false;
+    acctBtn.setAttribute("aria-expanded", "true");
+  }
+
+  acctBtn.addEventListener("click", function(e){
+    e.stopPropagation();
+    if(menu.hidden) openMenu(); else closeMenu();
+  });
+  menu.addEventListener("click", function(e){ e.stopPropagation(); });
+  document.addEventListener("click", function(){ if(!menu.hidden) closeMenu(); });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape" && !menu.hidden) closeMenu();
   });
 
   if(uploadBtn) uploadBtn.addEventListener("click", function(){
@@ -1621,6 +1836,7 @@
       cloud.err = "";
       if(u){
         startWatch();
+        watchVenues();
       }else{
         stopWatch();
         places = load();

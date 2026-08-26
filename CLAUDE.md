@@ -58,11 +58,13 @@ The list groups by `park|land` in first-encountered order, which means group ord
 
 ### Known venues (OpenStreetMap)
 
-`fetchVenues()` runs one Overpass query **per park, scoped to that park's own polygon** (`area["tourism"="theme_park"]["name"=...]`), not a bounding box and not a latitude threshold. That matters: a bbox over the resort returns ~170 places including Downtown Disney and the hotels, while the polygons return ~34 per park correctly attributed. Guessing park from latitude is what made the original seed data wrong.
+`fetchVenues()` runs one Overpass query **per zone, scoped to that zone's own polygon**, not a bounding box and not a latitude threshold. There are three: Disneyland and California Adventure are `tourism=theme_park`, while Downtown Disney is `landuse=retail` — hence `OSM_AREA` carrying a whole selector string per zone rather than just a name. That matters: a bbox over the resort returns ~170 places including Downtown Disney and the hotels, while the polygons return ~34 per park correctly attributed. Guessing park from latitude is what made the original seed data wrong.
 
-Results are cached in `localStorage["magicMunchMap.osm.v1"]` indefinitely and **all searching runs against that cache**. Never query per keystroke: Nominatim's usage policy forbids autocomplete traffic outright, and Overpass is volunteer-run. The cache also means suggestions work in the parks, where there is no signal.
+Signed in, the list lives in one shared Firestore doc (`venues/all`) — it is identical for everyone, so the first device to find it missing fetches from Overpass and writes it, and every device after just reads. `localStorage["magicMunchMap.osm.v1"]` mirrors it for signed-out and offline use. **All searching runs against that cache**. Never query per keystroke: Nominatim's usage policy forbids autocomplete traffic outright, and Overpass is volunteer-run. The cache also means suggestions work in the parks, where there is no signal.
 
 OSM commonly holds both a node and a building way for one venue, so `step()` dedupes on `park|name`. `nearestVenue()` uses an equirectangular approximation, which is accurate well past the 60m radius it is called with.
+
+Venues carry more than a name: `amenity` (100% coverage — this is what distinguishes table service from quick service), `cuisine` (~80%), `website` (~85%), and `mobile_ordering` (~57%). These are copied onto a place when one is picked, so cards can show them.
 
 OSM knows nothing about Disney "lands", so `land` stays a manual choice from `LANDS`.
 

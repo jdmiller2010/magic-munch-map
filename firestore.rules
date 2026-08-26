@@ -21,5 +21,11 @@ service cloud.firestore {
     match /places/{placeId} {
       allow read, write: if allowed();
     }
+
+    // Shared OpenStreetMap venue list. Identical for everyone, so one device
+    // fetches it and the rest read it instead of each hitting Overpass.
+    match /venues/{doc} {
+      allow read, write: if allowed();
+    }
   }
 }
