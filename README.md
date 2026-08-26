@@ -5,6 +5,8 @@ A one-page static site for planning what to eat at Disneyland and California Adv
 ## Files
 
 - `index.html` — the whole app, including the logo (inline SVG in the app bar). There is no seed data file; the list starts empty and lives in Firestore or your browser.
+- `menu.js` — the menu catalog, generated from a Disney Parks Blog foodie guide
+- `tools/extract_menu.py` — generates it
 - `firebase-config.js` — optional cloud sync config. Null by default; the app works without it.
 - `firestore.rules` — the security rules to paste into the Firebase console.
 - `README.md` — this
@@ -68,6 +70,20 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 - **Offline**, edits are cached locally and sync when signal returns — which matters, because the parks are a dead zone. The status dot turns gold while offline.
 - **Signed out**, nothing changes from before: the shared list plus this browser's `localStorage`.
 - Signing in does **not** touch `localStorage`, so signing out returns you to whatever you had before, untouched.
+
+## The menu catalog
+
+`menu.js` holds every dish from a Disney Parks Blog foodie guide — name, venue, land, park, description, and a photo. The **Menu** view browses it grouped by land, and the add button on each card is the only way anything enters your list. Nothing is imported wholesale: the catalog is a source, not content. That's deliberate — the app is for the handful of things you actually want, not for every item Disney sells.
+
+Rebuild it when a new guide drops:
+
+```
+python3 tools/extract_menu.py <guide-url> --season "Halloween 2026" > menu.js
+```
+
+Add `--json` to inspect the extraction without writing the file. It scopes to `<main>`, treats a fully-bold paragraph as a venue, reads the `Location:` line for the land, and takes dish names and descriptions from image alt text, which is the richest field on the page. Items already on your list show a tick instead of a plus, so re-running the extractor never creates duplicates.
+
+Photos are hotlinked from Disney's CDN at the 767px srcset size rather than the 1920px original. That keeps the list fast on park wifi, but it does mean the images are Disney's to move or block at any time — if they vanish, cards fall back to the fork glyph.
 
 ## Fields
 
