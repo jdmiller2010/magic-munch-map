@@ -86,6 +86,8 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 **Disney's menu sections are not the app's meals.** `mealsFor()` maps a `period` label to zero or more meal keys: "Lunch And Dinner" (1,457 items, the largest bucket) answers to both, "Snack" to AM and PM since it says nothing about which, "Special" and "Lounge" to neither. Matching on the `meal` key alone left 2,737 of 4,020 items unreachable by the filter. Every meal check goes through `mealOk()` — `visible()` and the Explore filter both — so the two cannot drift.
 
+**A cap must never be silent.** Explore holds back what it cannot render — four thousand cards on a phone is not viable — but every section header reads "350 of 2,488" when it is truncated, the count is the full total rather than the visible slice, and a Show more button raises the ceiling. Silent truncation reads as "this is everything", which is the one thing it is not.
+
 **Explore caps each section separately.** One shared cap meant the 193 seasonal items were pushed first and the menu got the remainder: seven of nearly four thousand, so a venue with a large menu looked empty.
 
 **One marker per location, never one per record.** 4,020 dishes resolve to 55 venues — median 52 per point, worst 270 — so a marker each would stack hundreds invisibly on one pixel. `groupBySpot()` buckets by rounded lat/lng, the pin carries the count, and `spotPopup()` lists what is there with an action per row (Add in Explore, Edit in My list), capped at 12. `markers` is keyed under **every** member of a group so `focus(p)` still finds the pin for a given record, and dragging is disabled on a grouped pin — moving one would move all of them.

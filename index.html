@@ -345,6 +345,7 @@
   .iconbtn[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#2a2000}
 
   .empty{text-align:center;color:var(--muted);font-size:14px;padding:34px 20px}
+  .showmore{display:block;width:calc(100% - 4px);margin:16px 2px 4px;text-align:center}
   .card.ghost{border-style:dashed;background:transparent;box-shadow:none}
   .thumb{
     width:64px;height:64px;flex:none;border-radius:14px;object-fit:cover;
@@ -892,6 +893,7 @@
     group:"area",        // area | day | tried  (only meaningful for mine)
     parks:{ dl:true, dca:true, dtd:true },
     scope:"seasonal",    // explore: seasonal | all
+    more:0,              // how many times "Show more" has been pressed
     meals:{},            // selected meal keys; empty means any
     mustOnly:false, query:"", terms:null, moving:false,
     here:null            // {lat,lng} once geolocation has answered
@@ -1092,10 +1094,15 @@
       if(hit){
         // Keep the photo and the season, take the price and meal period.
         if(!hit.price)  hit.price  = m.price || "";
-        if(!hit.period) hit.period = m.period || "";
         if(!hit.meal)   hit.meal   = m.meal || "";
         if(!hit.desc)   hit.desc   = m.desc || "";
         if(!hit.land)   hit.land   = m.land || "";
+        // The same dish is often listed under two sections - say "Special" and
+        // "Lunch And Dinner". Prefer whichever actually names a service time,
+        // or the dish becomes unreachable by the meal filter on a coin flip.
+        if(!hit.period || (!mealsFor(hit).length && mealsFor(m).length)){
+          hit.period = m.period || hit.period;
+        }
         return;
       }
       var row = {
@@ -1791,11 +1798,14 @@
       });
     }
 
-    // Seasonal first because it is the photographed set, but never at the
-    // expense of the menu.
-    var out = seasonal.slice(0, 120)
-                .concat(menu.slice(0, 300))
-                .concat(spots.slice(0, 40));
+    /* Rendering four thousand cards on a phone is not viable, so the list is
+       capped - but never silently. Each section reports what it is holding
+       back, and "Show more" raises the ceiling. */
+    var grow = state.more * 400;
+    var caps = { seasonal:150 + grow, menu:350 + grow, spots:60 + grow };
+    var out = seasonal.slice(0, caps.seasonal)
+                .concat(menu.slice(0, caps.menu))
+                .concat(spots.slice(0, caps.spots));
 
     if(state.here){
       out.sort(function(a, b){
@@ -1804,6 +1814,10 @@
         return da - db;
       });
     }
+    out.totals = { seasonal:seasonal.length, menu:menu.length, spots:spots.length };
+    out.hidden = Math.max(0, seasonal.length - caps.seasonal) +
+                 Math.max(0, menu.length - caps.menu) +
+                 Math.max(0, spots.length - caps.spots);
     return out;
   }
 
@@ -1818,18 +1832,31 @@
       host.appendChild(e);
       return;
     }
+    var totals = list.totals || {};
     var groups = [
-      ["Seasonal", list.filter(function(r){ return r.hit === "dish" && r.m.seasonal; })],
-      ["On the menu", list.filter(function(r){ return r.hit === "dish" && !r.m.seasonal; })],
-      ["Places", list.filter(function(r){ return r.hit === "venue"; })]
+      ["Seasonal", list.filter(function(r){ return r.hit === "dish" && r.m.seasonal; }), totals.seasonal],
+      ["On the menu", list.filter(function(r){ return r.hit === "dish" && !r.m.seasonal; }), totals.menu],
+      ["Places", list.filter(function(r){ return r.hit === "venue"; }), totals.spots]
     ];
     groups.forEach(function(g){
       if(!g[1].length) return;
-      var sec = section(host, g[0], g[1].length);
+      // Say "300 of 3,912" rather than just "300", so a cap is never mistaken
+      // for the whole answer.
+      var label = g[2] && g[2] > g[1].length ? g[1].length + " of " + g[2] : g[1].length;
+      var sec = section(host, g[0], label);
       g[1].forEach(function(r){
         sec.appendChild(r.hit === "dish" ? menuCard(r.m, r.owned) : venueCard(r.v, r.owned));
       });
     });
+
+    if(list.hidden > 0){
+      var more = document.createElement("button");
+      more.type = "button";
+      more.className = "btn solid showmore";
+      more.textContent = "Show " + Math.min(list.hidden, 400 * 3) + " more";
+      more.addEventListener("click", function(){ state.more++; render(); });
+      host.appendChild(more);
+    }
   }
 
   function drawList(shown){
@@ -2222,8 +2249,9 @@
       var hits = exploreList();
       drawMarkers(hits.filter(hasCoords));
       if(state.show === "cards") drawExploreCards(host, hits); else host.innerHTML = "";
+      var total = hits.length + (hits.hidden || 0);
       document.getElementById("count").textContent =
-        hits.length + (hits.length === 1 ? " result" : " results");
+        total + (total === 1 ? " result" : " results");
       renderFilterBadge();
       return;
     }
@@ -2472,8 +2500,10 @@
     // section with no way to tell why.
     var mealsUseful = !explore || state.scope === "all";
     document.getElementById("fMeals").hidden = !mealsUseful;
-    // "Unplanned" is about your own planning, not about when a kitchen serves.
-    document.getElementById("mealNone").hidden = explore;
+    // 914 menu items are Special or Lounge and state no service time. Without
+    // a chip for them, ticking every meal still hides all 914.
+    document.getElementById("mealNone").hidden = false;
+    document.getElementById("mealNone").textContent = explore ? "No set time" : "Unplanned";
     document.getElementById("mealLabel").innerHTML = explore
       ? "Served at <em>&mdash; any, unless you pick some</em>"
       : "Meals <em>&mdash; any, unless you pick some</em>";
@@ -2512,6 +2542,7 @@
   var searchEl = document.getElementById("search");
   searchEl.addEventListener("input", function(e){
     setQuery(e.target.value);
+    state.more = 0;
     render();
   });
 
