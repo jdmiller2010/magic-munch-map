@@ -36,7 +36,9 @@ Worth knowing: `localStorage` is scoped per origin, so browser-only edits saved 
 
 ## Adding places
 
-Tap **Add**, fill in the form. A place doesn't need a pin — it'll show in the list either way, and the target button on its card drops one on the map whenever you get round to it.
+Tap **Load park venues** in Manage once, and the app pulls every mapped food venue in both parks from OpenStreetMap — surveyed positions, not guesses. After that the name field autocompletes as you type, and picking a suggestion fills in the park and the real coordinates.
+
+Tap **Add**, fill in the form. A place doesn't need a pin — it'll show in the list either way, and the button on its card drops one whenever you get round to it. In Map view the same button becomes **Drop pin**: tap where you're standing and the nearest mapped venue within 60m is offered as the name. Clear it and type your own for a cart or stand nobody has mapped — the pin stays exactly where you put it.
 
 Four views across the top: **List** groups by land, **Map** shows the pins, **Timeline** lays out each day by meal, and **Tried** splits everything into what you've eaten and what's still waiting. Tick "We tried this" on any place to rate it out of five and write down what you thought.
 

@@ -56,6 +56,16 @@ Filter state lives in one `state` object (park segment, per-type toggles, must-o
 
 The list groups by `park|land` in first-encountered order, which means group ordering follows array order in `places` — reordering the data reorders the UI.
 
+### Known venues (OpenStreetMap)
+
+`fetchVenues()` runs one Overpass query **per park, scoped to that park's own polygon** (`area["tourism"="theme_park"]["name"=...]`), not a bounding box and not a latitude threshold. That matters: a bbox over the resort returns ~170 places including Downtown Disney and the hotels, while the polygons return ~34 per park correctly attributed. Guessing park from latitude is what made the original seed data wrong.
+
+Results are cached in `localStorage["magicMunchMap.osm.v1"]` indefinitely and **all searching runs against that cache**. Never query per keystroke: Nominatim's usage policy forbids autocomplete traffic outright, and Overpass is volunteer-run. The cache also means suggestions work in the parks, where there is no signal.
+
+OSM commonly holds both a node and a building way for one venue, so `step()` dedupes on `park|name`. `nearestVenue()` uses an equirectangular approximation, which is accurate well past the 60m radius it is called with.
+
+OSM knows nothing about Disney "lands", so `land` stays a manual choice from `LANDS`.
+
 ## Conventions to match
 
 - **ES5 style throughout**: `var`, `function(){}`, no arrow functions, template literals, `const`/`let`, or optional chaining. The whole script is one IIFE with no module system. Keep new code in the same dialect.

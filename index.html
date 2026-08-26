@@ -273,7 +273,7 @@
   .grab{width:38px;height:4px;border-radius:2px;background:var(--line);margin:10px auto 2px}
   .sheet{padding:8px 18px calc(20px + var(--safe-b))}
   .sheet h2{font-size:18px;margin-bottom:14px}
-  .field{margin-bottom:12px}
+  .field{margin-bottom:12px;position:relative}
   .field label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
   .field input,.field select,.field textarea{
     width:100%;font-family:inherit;font-size:15px;padding:11px 12px;border:1px solid var(--line);
@@ -301,6 +301,21 @@
   .two{display:flex;gap:10px}
   .two .field{flex:1;min-width:0}
   .err{color:var(--food);font-size:13px;font-weight:600;margin:0 0 10px;display:none}
+  .acnote{font-size:12.5px;color:var(--muted);margin:-6px 0 12px}
+  .acnote:empty{display:none}
+  .acbox{
+    position:absolute;left:0;right:0;top:100%;z-index:20;margin-top:4px;
+    background:var(--surface);border:1px solid var(--line);border-radius:var(--r-sm);
+    box-shadow:var(--shadow-lg);max-height:212px;overflow-y:auto
+  }
+  .acbox button{
+    display:block;width:100%;text-align:left;appearance:none;border:0;cursor:pointer;
+    background:transparent;color:var(--ink);font-size:14px;font-weight:500;
+    padding:9px 12px;border-bottom:1px solid var(--line)
+  }
+  .acbox button:last-child{border-bottom:0}
+  .acbox button:hover,.acbox button:focus{background:var(--surface-2)}
+  .acbox .sub{display:block;font-size:11.5px;color:var(--muted);font-weight:500;margin-top:1px}
   .row{display:flex;gap:10px;margin-top:16px}
   .row .btn{flex:1;margin:0;text-align:center}
   @media (min-width:640px){
@@ -427,6 +442,7 @@
       <p class="msg" id="syncMsg"></p>
     </div>
 
+    <button type="button" class="btn" id="osmBtn">Load park venues</button>
     <button type="button" class="btn" id="moveBtn" aria-pressed="false">Move pins</button>
     <button type="button" class="btn solid" id="copyBtn">Copy backup</button>
     <button type="button" class="btn" id="resetBtn">Reset</button>
@@ -442,7 +458,7 @@
 
 <button type="button" class="fab" id="addBtn">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-  <span>Add</span>
+  <span id="fabLabel">Add</span>
 </button>
 
 <dialog id="dlg">
@@ -452,8 +468,10 @@
     <p class="err" id="dlgErr"></p>
     <div class="field">
       <label for="fName">Name</label>
-      <input id="fName" type="text" autocomplete="off" placeholder="Blue Bayou">
+      <input id="fName" type="text" autocomplete="off" placeholder="Start typing a venue name">
+      <div class="acbox" id="acbox" hidden></div>
     </div>
+    <p class="acnote" id="dlgNote"></p>
     <div class="field">
       <label for="fPark">Park</label>
       <select id="fPark">
@@ -598,6 +616,87 @@
   }
 
   function isTried(p){ return !!p.tried; }
+
+  /* ---------- known venues, from OpenStreetMap ----------
+     One Overpass query per park, scoped to the park's own polygon rather
+     than a latitude guess, then cached. Searching runs against the cache,
+     never per keystroke: Nominatim's policy forbids autocomplete traffic
+     and Overpass is a volunteer-run service. It also means the suggestions
+     still work in the park, where there is no signal. */
+
+  var OSM_KEY  = "magicMunchMap.osm.v1";
+  var OSM_AMEN = "^(restaurant|fast_food|cafe|ice_cream|bar|pub|biergarten)$";
+  var OSM_AREA = [ { k:"dl", area:"Disneyland" }, { k:"dca", area:"Disney California Adventure" } ];
+  var venues = [];
+  var venuesFetched = "";
+  var fetching = false;
+
+  (function restoreVenues(){
+    try{
+      var raw = localStorage.getItem(OSM_KEY);
+      if(raw){
+        var o = JSON.parse(raw);
+        if(o && o.venues && o.venues.length){ venues = o.venues; venuesFetched = o.fetched || ""; }
+      }
+    }catch(e){}
+  })();
+
+  function fetchVenues(done){
+    if(fetching) return;
+    fetching = true;
+    var out = [], pending = OSM_AREA.length, failed = false;
+
+    OSM_AREA.forEach(function(pk){
+      var q = '[out:json][timeout:60];area["tourism"="theme_park"]["name"="' + pk.area + '"]->.p;' +
+              '(node(area.p)["amenity"~"' + OSM_AMEN + '"]["name"];' +
+              ' way(area.p)["amenity"~"' + OSM_AMEN + '"]["name"];);out center tags;';
+      fetch("https://overpass-api.de/api/interpreter", {
+        method:"POST",
+        headers:{ "Content-Type":"application/x-www-form-urlencoded" },
+        body:"data=" + encodeURIComponent(q)
+      }).then(function(r){ return r.json(); }).then(function(d){
+        (d.elements || []).forEach(function(e){
+          var t = e.tags || {};
+          var la = e.lat !== undefined ? e.lat : (e.center && e.center.lat);
+          var ln = e.lon !== undefined ? e.lon : (e.center && e.center.lon);
+          if(t.name && typeof la === "number" && typeof ln === "number"){
+            out.push({ name:t.name, lat:+la.toFixed(5), lng:+ln.toFixed(5), park:pk.k });
+          }
+        });
+        step();
+      }, function(){ failed = true; step(); });
+    });
+
+    function step(){
+      if(--pending > 0) return;
+      fetching = false;
+      // OSM often holds both a node and a building way for one venue
+      var seen = {}, list = [];
+      out.forEach(function(v){
+        var key = v.park + "|" + v.name.toLowerCase();
+        if(!seen[key]){ seen[key] = true; list.push(v); }
+      });
+      list.sort(function(a,b){ return a.name.localeCompare(b.name); });
+      if(list.length){
+        venues = list;
+        venuesFetched = new Date().toISOString();
+        try{ localStorage.setItem(OSM_KEY, JSON.stringify({ fetched:venuesFetched, venues:list })); }catch(e){}
+      }
+      done(list.length, failed);
+    }
+  }
+
+  function nearestVenue(lat, lng, maxMetres){
+    var best = null, bestD = Infinity;
+    var scale = Math.cos(lat * Math.PI / 180);
+    venues.forEach(function(v){
+      var dy = (v.lat - lat) * 111320;
+      var dx = (v.lng - lng) * 111320 * scale;
+      var d = Math.sqrt(dy*dy + dx*dx);
+      if(d < bestD){ bestD = d; best = v; }
+    });
+    return (best && bestD <= maxMetres) ? { v:best, d:Math.round(bestD) } : null;
+  }
 
   function svg(inner, sw){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+
@@ -926,6 +1025,7 @@
     // Leaflet measures 0x0 while the container is display:none, so it has to be
     // told to re-measure once the map is actually on screen again.
     if(v === "map") setTimeout(function(){ map.invalidateSize(); }, 0);
+    if(fabLabel) fabLabel.textContent = v === "map" ? "Drop pin" : "Add";
     render();
   }
 
@@ -1013,12 +1113,19 @@
     fillLands(parkSel.value, keep);
   });
 
-  function openDialog(p){
+  function openDialog(p, seed){
     editingId = p ? p.id : null;
+    sheetCoords = seed && seed.lat !== undefined ? { lat:seed.lat, lng:seed.lng } : null;
+    dlgNote.textContent = seed && seed.note ? seed.note : "";
+    hideSuggest();
+    // First time the sheet is opened, pull the venue list so the name field
+    // can autocomplete. One request pair, then cached indefinitely.
+    if(!venues.length && !fetching) fetchVenues(function(){ renderOsm(); });
     document.getElementById("dlgTitle").textContent = p ? "Edit place" : "Add a place";
-    document.getElementById("fName").value = p ? p.name : "";
-    document.getElementById("fPark").value = p ? (p.park || "dl") : "dl";
-    fillLands(p ? (p.park || "dl") : "dl", p ? (p.land || "") : "");
+    fNameEl.value = p ? p.name : (seed && seed.name ? seed.name : "");
+    var pk = p ? (p.park || "dl") : (seed && seed.park ? seed.park : "dl");
+    parkSel.value = pk;
+    fillLands(pk, p ? (p.land || "") : "");
     document.getElementById("fMeal").value = p ? (p.meal||"") : "";
     document.getElementById("fDate").value = p ? (p.date||"") : "";
     document.getElementById("fNote").value = p ? (p.note||"") : "";
@@ -1030,10 +1137,48 @@
     paintStars();
     err.style.display = "none";
     dlg.showModal();
-    document.getElementById("fName").focus();
+    fNameEl.focus();
   }
 
-  document.getElementById("fName").addEventListener("input", function(){ err.style.display = "none"; });
+  var fNameEl = document.getElementById("fName");
+  var acbox   = document.getElementById("acbox");
+  var dlgNote = document.getElementById("dlgNote");
+  var sheetCoords = null;    // set by picking a venue, or by dropping a pin
+
+  function hideSuggest(){ acbox.hidden = true; acbox.innerHTML = ""; }
+
+  function pickVenue(v){
+    fNameEl.value = v.name;
+    parkSel.value = v.park;
+    fillLands(v.park, document.getElementById("fLand").value);
+    sheetCoords = { lat:v.lat, lng:v.lng };   // the surveyed position, not a guess
+    dlgNote.textContent = "Using the OpenStreetMap position for " + v.name + ".";
+    hideSuggest();
+    err.style.display = "none";
+  }
+
+  function showSuggest(){
+    var q = fNameEl.value.trim().toLowerCase();
+    acbox.innerHTML = "";
+    if(q.length < 2 || !venues.length){ acbox.hidden = true; return; }
+    var hits = venues.filter(function(v){
+      return v.name.toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 7);
+    if(!hits.length){ acbox.hidden = true; return; }
+    hits.forEach(function(v){
+      var b = document.createElement("button");
+      b.type = "button";
+      b.innerHTML = esc(v.name) + '<span class="sub">' + esc(PARKS[v.park]) + '</span>';
+      b.addEventListener("click", function(){ pickVenue(v); });
+      acbox.appendChild(b);
+    });
+    acbox.hidden = false;
+  }
+
+  fNameEl.addEventListener("input", function(){
+    err.style.display = "none";
+    showSuggest();
+  });
 
   document.getElementById("dlgForm").addEventListener("keydown", function(e){
     if(e.key === "Enter" && e.target.tagName !== "TEXTAREA"){
@@ -1041,7 +1186,7 @@
       document.getElementById("dlgSave").click();
     }
   });
-  document.getElementById("dlgCancel").addEventListener("click", function(){ dlg.close(); });
+  document.getElementById("dlgCancel").addEventListener("click", function(){ sheetCoords = null; hideSuggest(); dlg.close(); });
 
   document.getElementById("dlgSave").addEventListener("click", function(){
     var name = document.getElementById("fName").value.trim();
@@ -1072,8 +1217,15 @@
       target = Object.assign({ id: "new-" + Date.now(), must:false, ord: nextOrd() }, data);
       places.push(target);
     }
-    editingId = null;
-    if(target) persist(target, editedExisting ? Object.keys(data) : null); else save();
+    var fields = Object.keys(data);
+    if(target && sheetCoords){
+      target.lat = sheetCoords.lat;
+      target.lng = sheetCoords.lng;
+      fields = fields.concat(["lat","lng"]);
+    }
+    editingId = null; sheetCoords = null;
+    hideSuggest();
+    if(target) persist(target, editedExisting ? fields : null); else save();
     render(); dlg.close();
   });
 
@@ -1111,7 +1263,22 @@
 
   // Adding no longer requires a map tap: a place can live in the list with no
   // pin at all and get one later from the target button on its card.
-  addBtn.addEventListener("click", function(){ openDialog(null); });
+  var NEW_PIN = "\u0000new";
+  var fabLabel = document.getElementById("fabLabel");
+
+  addBtn.addEventListener("click", function(){
+    // On the map the useful gesture is "something is here"; elsewhere it is
+    // "add this place", which needs no coordinates at all.
+    if(state.view === "map") armNewPin(); else openDialog(null);
+  });
+
+  function armNewPin(){
+    setView("map");
+    placingId = NEW_PIN;
+    document.getElementById("placeMsg").textContent = "Tap the map where the place is.";
+    document.getElementById("placebar").hidden = false;
+    document.getElementById("map").style.cursor = "crosshair";
+  }
 
   function armPlacement(p){
     setView("map");                 // clears any previous arming, so set the id after
@@ -1140,11 +1307,30 @@
 
   map.on("click", function(e){
     if(!placingId) return;
-    var p = byId(placingId);
+    var isNew = placingId === NEW_PIN;
+    var p = isNew ? null : byId(placingId);
+    var lat = +e.latlng.lat.toFixed(5);
+    var lng = +e.latlng.lng.toFixed(5);
     cancelPlacement();
+
+    if(isNew){
+      // Offer the nearest known venue, but never force it: the pin stands on
+      // its own if this is a cart or a stand nobody has mapped.
+      var near = nearestVenue(lat, lng, 60);
+      openDialog(null, {
+        lat: lat, lng: lng,
+        name: near ? near.v.name : "",
+        park: near ? near.v.park : (lat > 33.8095 ? "dl" : "dca"),
+        note: near
+          ? "Nearest mapped venue is " + near.v.name + ", " + near.d + "m away. Clear the name and type your own if that is not it."
+          : "No mapped venue within 60m, so the pin stays exactly where you tapped. Give it any name you like."
+      });
+      return;
+    }
+
     if(!p) return;
-    p.lat = +e.latlng.lat.toFixed(5);
-    p.lng = +e.latlng.lng.toFixed(5);
+    p.lat = lat;
+    p.lng = lng;
     persist(p, ["lat","lng"]);
     render();
     focus(p);
@@ -1360,6 +1546,29 @@
     });
   });
 
+  var osmBtn = document.getElementById("osmBtn");
+
+  function renderOsm(){
+    if(!osmBtn) return;
+    osmBtn.disabled = fetching;
+    osmBtn.textContent = fetching ? "Loading\u2026"
+      : venues.length ? "Refresh park venues (" + venues.length + ")"
+      : "Load park venues";
+  }
+
+  if(osmBtn) osmBtn.addEventListener("click", function(){
+    renderOsm();
+    fetchVenues(function(n, failed){
+      renderOsm();
+      hint.textContent = n
+        ? n + " venues loaded from OpenStreetMap" + (failed ? " (one park failed; try again)" : "") +
+          ". They power the name suggestions and the nearest-venue prefill."
+        : "Could not reach OpenStreetMap. The list still works, you just have to type names yourself.";
+    });
+    fetching = true;
+    renderOsm();
+  });
+
   if(acctBtn) acctBtn.addEventListener("click", function(){
     if(cloud.user){
       var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -1426,6 +1635,7 @@
   }
 
   setView("list");
+  renderOsm();
   initCloud();
 })();
 </script>
