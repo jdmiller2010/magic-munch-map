@@ -134,13 +134,13 @@
   .moderow .count{flex:none}
   .filtbtn{
     flex:none;appearance:none;cursor:pointer;position:relative;
-    display:flex;align-items:center;gap:6px;white-space:nowrap;
-    font-family:inherit;font-size:12.5px;font-weight:600;padding:7px 11px;
-    border:1px solid var(--line);border-radius:999px;
+    display:flex;align-items:center;justify-content:center;
+    width:36px;height:36px;padding:0;
+    border:1px solid var(--line);border-radius:50%;
     background:var(--surface);color:var(--ink);transition:transform .2s var(--spring)
   }
-  .filtbtn:active{transform:scale(.95)}
-  .filtbtn svg{width:15px;height:15px}
+  .filtbtn:active{transform:scale(.92)}
+  .filtbtn svg{width:17px;height:17px}
   .filtbtn .dot{
     position:absolute;top:-3px;right:-3px;width:9px;height:9px;
     border-radius:50%;background:var(--gold);border:2px solid var(--bg)
@@ -624,9 +624,9 @@
       <button type="button" data-mode="explore" aria-pressed="false">Explore</button>
     </div>
     <span class="count" id="count">0 places</span>
-    <button type="button" class="filtbtn" id="filterBtn">
+    <button type="button" class="filtbtn" id="filterBtn" aria-label="Filters">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 6h18M7 12h10M10 18h4"/></svg>
-      <span>Filters</span><span class="dot" id="filterDot" hidden></span>
+      <span class="dot" id="filterDot" hidden></span>
     </button>
     <div class="seg tog" role="group" aria-label="Show as">
       <button type="button" data-show="cards" aria-pressed="true" aria-label="Show as a list">
@@ -2145,6 +2145,9 @@
     if(v === "map") setTimeout(sizeMap, 0);
     else document.getElementById("map").style.height = "";
     if(fabLabel) fabLabel.textContent = v === "map" ? "Drop pin" : "Add";
+    document.querySelectorAll(".seg button[data-show]").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.show === v ? "true" : "false");
+    });
     var pill = document.getElementById("viewPill");
     if(pill) pill.querySelector(".lbl").textContent = v === "map" ? "List" : "Map";
     render();
@@ -2391,6 +2394,9 @@
 
   document.querySelectorAll(".seg button[data-mode]").forEach(function(b){
     b.addEventListener("click", function(){ setMode(b.dataset.mode); });
+  });
+  document.querySelectorAll(".seg button[data-show]").forEach(function(b){
+    b.addEventListener("click", function(){ setShow(b.dataset.show); });
   });
   var viewPill = document.getElementById("viewPill");
   viewPill.addEventListener("click", function(){
