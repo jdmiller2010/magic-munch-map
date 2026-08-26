@@ -70,7 +70,11 @@ OSM knows nothing about Disney "lands", so `land` stays a manual choice from `LA
 
 ### The focus mask
 
-`drawFocus()` veils everything outside the selected zones so the eye lands where the food is. The rings are **not** park boundaries — they are convex hulls of each zone's venue positions, pushed out 110m and corner-cut twice with Chaikin. That was originally a fallback when Overpass was unreachable, but it is the better source anyway: it follows where venues actually are and updates whenever the venue data does.
+`drawFocus()` veils everything outside the selected zones. The rings come from `DINING.bounds` — real OSM park outlines, simplified to ~4m with Douglas-Peucker (261 points for all three). Disneyland is a MultiPolygon, so a zone can contribute more than one ring; never assume one ring per zone.
+
+The convex-hull code (`convexHull`/`expandRing`/`roundRing`) is still there as a fallback for a zone with no boundary. It shipped first, when Overpass was unreachable, and it is worse: a hull of venue positions has no relationship to the park edge, which is what the eye expects to see.
+
+Boundaries come from **Nominatim**, not Overpass — Overpass has been unreachable or 500ing from here, while Nominatim returns polygon geometry directly. Its policy caps requests at one per second, hence the sleep in `boundaries()`. `overpass_venues()` now tries three endpoints in turn for the same reason.
 
 Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` punches the rings out as holes. The softness comes from `filter: blur(9px)` on the veil itself, which turns each hole edge into a gradient rather than a cut — cheaper and far more robust than blurring map tiles, which would need a second clipped tile layer re-projected on every zoom.
 

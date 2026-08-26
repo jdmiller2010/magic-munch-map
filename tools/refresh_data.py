@@ -16,7 +16,7 @@ Usage:  python3 tools/refresh_data.py > dining.js
         python3 tools/refresh_data.py --json          # inspect without writing
         python3 tools/refresh_data.py --limit 5       # quick smoke test
 """
-import argparse, json, re, sys, time, urllib.parse, urllib.request, unicodedata
+import argparse, json, math, re, sys, time, urllib.parse, urllib.request, unicodedata
 from datetime import datetime, timezone
 
 UA = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36",
@@ -26,7 +26,14 @@ JSON_UA = dict(UA, Accept="application/json, text/plain, */*")
 # identify themselves anyway.
 OVERPASS_UA = {"User-Agent": "magic-munch-map/1.0 (https://mmm.molendino.com)"}
 
-OVERPASS = "https://overpass-api.de/api/interpreter"
+# The main instance has been unreachable from some networks; try mirrors in turn.
+OVERPASS = ["https://overpass-api.de/api/interpreter",
+            "https://overpass.kumi.systems/api/interpreter",
+            "https://overpass.private.coffee/api/interpreter"]
+NOMINATIM = "https://nominatim.openstreetmap.org/search"
+BOUNDARIES = [("dl", "Disneyland Park, Anaheim"),
+              ("dca", "Disney California Adventure, Anaheim"),
+              ("dtd", "Downtown Disney, Anaheim")]
 AMENITY = "^(restaurant|fast_food|cafe|ice_cream|bar|pub|biergarten)$"
 ZONES = [
     ("dl",  '["tourism"="theme_park"]["name"="Disneyland"]'),
@@ -59,8 +66,16 @@ def overpass_venues(log):
              '(node(area.p)["amenity"~"%s"]["name"];'
              ' way(area.p)["amenity"~"%s"]["name"];);out center tags;' % (selector, AMENITY, AMENITY))
         body = urllib.parse.urlencode({"data": q}).encode()
-        req = urllib.request.Request(OVERPASS, data=body, headers=OVERPASS_UA)
-        data = json.loads(urllib.request.urlopen(req, timeout=90).read().decode())
+        data = None
+        for endpoint in OVERPASS:
+            try:
+                req = urllib.request.Request(endpoint, data=body, headers=OVERPASS_UA)
+                data = json.loads(urllib.request.urlopen(req, timeout=90).read().decode())
+                break
+            except Exception as e:
+                log("  %s unreachable (%s)" % (endpoint.split("/")[2], getattr(e, "code", type(e).__name__)))
+        if data is None:
+            raise SystemExit("every Overpass endpoint failed")
         n = 0
         for e in data.get("elements", []):
             t = e.get("tags") or {}
@@ -83,6 +98,61 @@ def overpass_venues(log):
         if key not in seen:
             seen.add(key); dedup.append(v)
     return dedup
+
+
+def rdp(pts, eps):
+    """Douglas-Peucker. Park outlines run to hundreds of points; a few dozen
+    draw identically at the zooms this map uses."""
+    if len(pts) < 3:
+        return pts
+    def gap(p, a, b):
+        if a == b:
+            return math.hypot(p[0] - a[0], p[1] - a[1])
+        span = (b[0] - a[0]) ** 2 + (b[1] - a[1]) ** 2
+        t = max(0, min(1, ((p[0] - a[0]) * (b[0] - a[0]) + (p[1] - a[1]) * (b[1] - a[1])) / span))
+        return math.hypot(p[0] - (a[0] + t * (b[0] - a[0])), p[1] - (a[1] + t * (b[1] - a[1])))
+    far, idx = 0, 0
+    for i in range(1, len(pts) - 1):
+        d = gap(pts[i], pts[0], pts[-1])
+        if d > far:
+            far, idx = d, i
+    if far > eps:
+        return rdp(pts[:idx + 1], eps)[:-1] + rdp(pts[idx:], eps)
+    return [pts[0], pts[-1]]
+
+
+def boundaries(log):
+    """Park outlines, from Nominatim rather than Overpass.
+
+    Overpass has been flaky here, and Nominatim hands back polygon geometry
+    directly. Its policy caps this at one request a second, which is why the
+    loop sleeps - three requests, once per refresh.
+    """
+    out = {}
+    for code, query in BOUNDARIES:
+        url = NOMINATIM + "?" + urllib.parse.urlencode(
+            {"q": query, "format": "jsonv2", "polygon_geojson": 1, "limit": 3, "countrycodes": "us"})
+        try:
+            results = json.loads(get(url, OVERPASS_UA, 40).decode())
+        except Exception as e:
+            log("  %-4s boundary failed (%s)" % (code, getattr(e, "code", type(e).__name__)))
+            time.sleep(1.2)
+            continue
+        for r in results:
+            g = r.get("geojson") or {}
+            if g.get("type") == "Polygon":
+                rings = [g["coordinates"][0]]
+            elif g.get("type") == "MultiPolygon":
+                rings = [poly[0] for poly in g["coordinates"]]
+            else:
+                continue
+            rings.sort(key=len, reverse=True)
+            simple = [rdp(r2, 0.00004) for r2 in rings]          # ~4m tolerance
+            out[code] = [[[round(pt[1], 5), round(pt[0], 5)] for pt in r2] for r2 in simple]
+            log("  %-4s %d ring(s), %d points" % (code, len(simple), sum(len(r2) for r2 in simple)))
+            break
+        time.sleep(1.2)
+    return out
 
 
 def slug_for(v):
@@ -182,7 +252,10 @@ def main():
 
     log("OpenStreetMap:")
     venues = overpass_venues(log)
-    log("  %d venues total\n" % len(venues))
+    log("  %d venues total" % len(venues))
+    log("Park boundaries:")
+    bounds = boundaries(log)
+    log("")
 
     targets = [v for v in venues if v["park"] in ("dl", "dca")]
     if a.limit:
@@ -211,7 +284,7 @@ def main():
 
     payload = {"updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
                "itemSource": "https://disneyland.disney.go.com/dining/dinemenu/",
-               "venues": venues, "details": details, "items": items}
+               "venues": venues, "bounds": bounds, "details": details, "items": items}
     if a.json:
         print(json.dumps(payload, ensure_ascii=False, indent=1))
     else:

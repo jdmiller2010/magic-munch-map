@@ -123,14 +123,14 @@
   /* The blur is on the veil itself, which softens the hole edges into a
      gradient instead of a hard cut. */
   .focusmask{
-    fill:#132033;fill-opacity:.5;pointer-events:none;
-    filter:blur(9px);stroke-linejoin:round
+    fill:#0d1826;fill-opacity:.58;pointer-events:none;
+    filter:blur(5px);stroke-linejoin:round
   }
   @media (prefers-color-scheme:dark){
-    .focusmask{fill:#000a14;fill-opacity:.62}
+    .focusmask{fill:#00060d;fill-opacity:.68}
   }
   @media (prefers-reduced-motion:reduce){
-    .focusmask{filter:blur(4px)}
+    .focusmask{filter:blur(3px)}
   }
   .leaflet-popup-content-wrapper{border-radius:var(--r-md);box-shadow:var(--shadow-lg)}
 
@@ -999,10 +999,21 @@
     return out;
   }
 
+  // Real OSM boundaries when we have them, a hull of the venue positions when
+  // we do not. The hull was the fallback that shipped first; the boundaries
+  // follow the actual park edge, which is what the eye expects to see.
+  var BOUNDS = DINING.bounds || {};
+
   function focusRings(){
     var rings = [];
     Object.keys(state.parks).forEach(function(k){
       if(!state.parks[k]) return;
+      if(BOUNDS[k] && BOUNDS[k].length){
+        BOUNDS[k].forEach(function(ring){
+          if(ring.length > 2) rings.push(ring);
+        });
+        return;
+      }
       var pts = [];
       venues.forEach(function(v){ if(v.park === k) pts.push({ lat: v.lat, lng: v.lng }); });
       if(pts.length < 3) return;
