@@ -609,7 +609,8 @@
   <footer class="wrap">
     Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors.
     Places without a pin still show in the list &mdash; tap a card name, or its map button, to drop one.<br>
-    Not affiliated with, endorsed by, or sponsored by Disney.
+    Not affiliated with, endorsed by, or sponsored by Disney.<br>
+    &copy; 2026 Jordan Miller &middot; <a href="https://github.com/jdmiller2010/magic-munch-map">source</a>, MIT licensed.
   </footer>
 </main>
 
@@ -1281,7 +1282,7 @@
   function drawMarkers(shown){
     Object.keys(markers).forEach(function(id){ map.removeLayer(markers[id]); });
     markers = {};
-    shown.filter(hasCoords).forEach(function(p){
+    shown.filter(hasCoords).forEach(function(p, idx){
       var draggable = state.moving && state.mode === "mine";
       var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:draggable,title:p.name});
       m.bindPopup(p.hit ? hitPopup(p) : popupHtml(p));
@@ -1292,7 +1293,9 @@
         persist(p, ["lat","lng"]);
       });
       m.addTo(map);
-      markers[p.id] = m;
+      // Explore hits have no record id; without a fallback key they all land
+      // on markers["undefined"] and only one ever gets removed again.
+      markers[p.id || ("anon-" + idx)] = m;
     });
   }
 
@@ -1368,7 +1371,9 @@
     el.appendChild(body);
 
     var acts = document.createElement("div");
-    acts.className = "acts one";
+    var spot = venueByName(m.venue);
+    acts.className = spot ? "acts" : "acts one";
+    if(spot) acts.appendChild(locateButton(spot.lat, spot.lng, m.dish));
     var add = document.createElement("button");
     add.type = "button";
     add.className = "iconbtn";
@@ -1384,6 +1389,21 @@
     acts.appendChild(add);
     el.appendChild(acts);
     return el;
+  }
+
+  function locateButton(lat, lng, label){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "iconbtn";
+    b.setAttribute("aria-label", "Show " + label + " on the map");
+    b.innerHTML = svg('<circle cx="12" cy="12" r="7"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>', 1.9);
+    b.addEventListener("click", function(){
+      setShow("map");
+      var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if(reduce) map.setView([lat, lng], 18);
+      else map.flyTo([lat, lng], 18, { duration:.6 });
+    });
+    return b;
   }
 
   function section(host, title, count){
@@ -1422,7 +1442,9 @@
     el.appendChild(body);
 
     var acts = document.createElement("div");
-    acts.className = "acts one";
+    var spot = v;
+    acts.className = spot ? "acts" : "acts one";
+    if(spot) acts.appendChild(locateButton(spot.lat, spot.lng, v.name));
     var add = document.createElement("button");
     add.type = "button";
     add.className = "iconbtn";
@@ -1456,7 +1478,8 @@
       var c = hitCoords(m);
       // NOT `kind`: saved places already use that for the OSM amenity type,
       // and a saved restaurant would then be mistaken for an explore hit.
-      out.push({ hit:"dish", m:m, name:m.dish, owned:!!have[menuKey(m)],
+      out.push({ hit:"dish", m:m, name:m.dish, id:"dish:" + menuKey(m),
+                 owned:!!have[menuKey(m)],
                  lat:c ? c.lat : null, lng:c ? c.lng : null });
     }
 
@@ -1475,7 +1498,7 @@
       venues.forEach(function(v){
         if(!state.parks[v.park]) return;
         if(!textMatches(v.name + " " + (v.cuisine || ""))) return;
-        spots.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+        spots.push({ hit:"venue", v:v, name:v.name, id:"venue:" + norm(v.name), lat:v.lat, lng:v.lng,
                      owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
       });
       // photographed, seasonal things first - they are the ones worth looking at
@@ -1492,7 +1515,7 @@
       });
       if(all) venues.forEach(function(v){
         if(!state.parks[v.park]) return;
-        spots.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+        spots.push({ hit:"venue", v:v, name:v.name, id:"venue:" + norm(v.name), lat:v.lat, lng:v.lng,
                      owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
       });
     }
@@ -2167,6 +2190,7 @@
     state.scope = "all";                       // chicken is a menu thing, not a seasonal one
     document.getElementById("scopePick").value = "all";
     setMode("explore");
+    setShow("cards");        // otherwise the map hides the very results it found
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document.querySelector(".searchbox").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block:"start" });
   });

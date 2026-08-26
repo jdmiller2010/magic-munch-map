@@ -155,6 +155,16 @@ Palette lives in the `:root` block at the top of `index.html`, with dark values 
 
 `--on-brand` exists because `--brand` inverts between themes: it is a dark cyan on light backgrounds and a bright cyan on dark ones, so anything painted on a solid brand surface needs ink that flips with it rather than hardcoded white.
 
+## Licence
+
+The code is MIT — see [LICENSE](LICENSE). © 2026 Jordan Miller.
+
+The **generated data files are not covered by it**, and that distinction matters:
+`dining.js` mixes OpenStreetMap data (ODbL, share-alike, attribution required)
+with Disney's menu content (not licensed for redistribution), and `menu.js` holds
+Disney's blog content. [NOTICE.md](NOTICE.md) sets out what applies to what and
+how to strip the parts you may not want in a public repo.
+
 ## Attribution
 
 Base map data © OpenStreetMap contributors, ODbL. The attribution link in the footer and on the map must stay.
