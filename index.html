@@ -196,6 +196,7 @@
   .tag.gold{background:var(--gold);color:#2a2000}
   .tag.meal{background:var(--brand-soft);color:var(--brand)}
   .tag.nowhere{background:transparent;border:1px dashed var(--line);color:var(--muted)}
+  .tag.tried{background:#358352;color:#fff}
   .note{margin:7px 0 0;font-size:13.5px;color:var(--muted);word-wrap:break-word}
   .acts{display:grid;grid-template-columns:repeat(2,34px);gap:6px;flex:none}
   .iconbtn{
@@ -270,6 +271,24 @@
     border-radius:var(--r-sm);background:var(--surface-2);color:var(--ink)
   }
   .field textarea{resize:vertical;min-height:62px}
+  .switch{
+    display:flex;align-items:center;gap:9px;cursor:pointer;margin:2px 0 12px;
+    font-size:14px;font-weight:600
+  }
+  .switch input{width:19px;height:19px;accent-color:var(--brand);flex:none;margin:0}
+  .stars{display:flex;gap:3px;padding-top:3px}
+  .stars button{
+    appearance:none;border:0;background:transparent;cursor:pointer;padding:1px;
+    color:var(--line);transition:transform .2s var(--spring)
+  }
+  .stars button svg{width:25px;height:25px;display:block}
+  .stars button.on{color:var(--gold)}
+  .stars button:active{transform:scale(.86)}
+  .rate{display:flex;gap:2px;margin-top:6px;color:var(--gold)}
+  .rate svg{width:14px;height:14px;display:block}
+  .rate .off{color:var(--line)}
+  .verdict{margin:6px 0 0;font-size:13.5px;color:var(--ink);font-style:italic}
+  .seg button{font-size:12.5px}
   .two{display:flex;gap:10px}
   .two .field{flex:1;min-width:0}
   .err{color:var(--food);font-size:13px;font-weight:600;margin:0 0 10px;display:none}
@@ -351,6 +370,7 @@
       <button type="button" data-view="list" aria-pressed="true">List</button>
       <button type="button" data-view="map" aria-pressed="false">Map</button>
       <button type="button" data-view="time" aria-pressed="false">Timeline</button>
+      <button type="button" data-view="tried" aria-pressed="false">Tried</button>
     </div>
   </div>
 </div>
@@ -448,8 +468,30 @@
       </div>
     </div>
     <div class="field">
-      <label for="fNote">Notes</label>
+      <label for="fNote">Notes before going</label>
       <textarea id="fNote" placeholder="What to order, when to go, who wants it"></textarea>
+    </div>
+
+    <label class="switch">
+      <input id="fTried" type="checkbox">
+      <span>We tried this</span>
+    </label>
+
+    <div id="triedBox" hidden>
+      <div class="two">
+        <div class="field">
+          <label for="fVisited">When</label>
+          <input id="fVisited" type="date">
+        </div>
+        <div class="field">
+          <label id="rateLbl">Rating</label>
+          <div class="stars" id="fRating" role="group" aria-labelledby="rateLbl"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label for="fVerdict">What we thought</label>
+        <textarea id="fVerdict" placeholder="Worth the line? Order it again?"></textarea>
+      </div>
     </div>
     <div class="row">
       <button type="button" class="btn" id="dlgCancel">Cancel</button>
@@ -522,6 +564,15 @@
     return [];
   }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(places)); }catch(e){} }
+
+  var STAR = '<path d="M12 3.6l2.5 5.2 5.5.8-4 3.9 1 5.6-5-2.7-5 2.7 1-5.6-4-3.9 5.5-.8z"/>';
+
+  function starSvg(filled){
+    return '<svg viewBox="0 0 24 24" fill="' + (filled ? "currentColor" : "none") +
+           '" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round">' + STAR + '</svg>';
+  }
+
+  function isTried(p){ return !!p.tried; }
 
   function svg(inner, sw){
     return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="'+(sw||2)+
@@ -671,6 +722,47 @@
     });
   }
 
+  function drawTried(shown){
+    var host = document.getElementById("list");
+    host.innerHTML = "";
+    var done = shown.filter(isTried);
+    var todo = shown.filter(function(p){ return !isTried(p); });
+
+    // most recently eaten first, then best rated
+    done.sort(function(a,b){
+      var av = a.visited || "", bv = b.visited || "";
+      if(av !== bv) return av < bv ? 1 : -1;
+      return (b.rating || 0) - (a.rating || 0);
+    });
+    todo.sort(function(a,b){ return (a.ord || 0) - (b.ord || 0); });
+
+    if(!shown.length){
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Nothing on the list yet.";
+      host.appendChild(empty);
+      return;
+    }
+
+    [["Tried", done], ["Still to try", todo]].forEach(function(pair){
+      var sec = document.createElement("section");
+      sec.className = "group";
+      var h = document.createElement("div");
+      h.className = "dayhead";
+      h.innerHTML = '<span class="nm">' + pair[0] + '</span><span class="ct">' + pair[1].length + '</span>';
+      sec.appendChild(h);
+      if(!pair[1].length){
+        var none = document.createElement("p");
+        none.className = "empty";
+        none.textContent = pair[0] === "Tried" ? "Nothing yet. Go eat something." : "You have eaten everything on the list.";
+        sec.appendChild(none);
+      }else{
+        pair[1].forEach(function(p){ sec.appendChild(cardFor(p)); });
+      }
+      host.appendChild(sec);
+    });
+  }
+
   function cardFor(p){
     var el = document.createElement("div");
     el.className = "card" + (p.must ? " must" : "");
@@ -695,6 +787,7 @@
     if(p.meal) tags.push(["tag meal", MEAL_LABEL[p.meal]]);
     if(p.date && fmtDate(p.date)) tags.push(["tag", fmtDate(p.date)]);
     if(!hasCoords(p)) tags.push(["tag nowhere", "No pin yet"]);
+    if(isTried(p)) tags.push(["tag tried", p.visited && fmtDate(p.visited) ? "Tried " + fmtDate(p.visited) : "Tried"]);
     if(p.must) tags.push(["tag gold", "Must do"]);
     if(tags.length){
       var meta = document.createElement("div");
@@ -708,11 +801,30 @@
       body.appendChild(meta);
     }
 
+    if(p.rating){
+      var rate = document.createElement("div");
+      rate.className = "rate";
+      rate.setAttribute("aria-label", p.rating + " out of 5");
+      var h = "";
+      for(var i = 1; i <= 5; i++){
+        h += '<span class="' + (i <= p.rating ? "" : "off") + '">' + starSvg(i <= p.rating) + '</span>';
+      }
+      rate.innerHTML = h;
+      body.appendChild(rate);
+    }
+
     if(p.note){
       var n = document.createElement("p");
       n.className = "note";
       n.textContent = p.note;
       body.appendChild(n);
+    }
+
+    if(p.verdict){
+      var v = document.createElement("p");
+      v.className = "verdict";
+      v.textContent = "\u201c" + p.verdict + "\u201d";
+      body.appendChild(v);
     }
     el.appendChild(body);
 
@@ -791,7 +903,9 @@
   function render(){
     var shown = places.filter(visible);
     drawMarkers(shown);
-    if(state.view === "time") drawTimeline(shown); else drawList(shown);
+    if(state.view === "time") drawTimeline(shown);
+    else if(state.view === "tried") drawTried(shown);
+    else drawList(shown);
     var must = shown.filter(function(p){ return p.must; }).length;
     document.getElementById("count").textContent =
       shown.length + (shown.length === 1 ? " place" : " places") + (must ? " · " + must + " must do" : "");
@@ -799,6 +913,33 @@
 
   var dlg = document.getElementById("dlg");
   var err = document.getElementById("dlgErr");
+  var triedChk = document.getElementById("fTried");
+  var triedBox = document.getElementById("triedBox");
+  var rateEl   = document.getElementById("fRating");
+  var rating   = 0;
+
+  function paintStars(){
+    rateEl.innerHTML = "";
+    for(var i = 1; i <= 5; i++){
+      (function(v){
+        var b = document.createElement("button");
+        b.type = "button";
+        b.className = v <= rating ? "on" : "";
+        b.setAttribute("aria-label", v + (v === 1 ? " star" : " stars"));
+        b.setAttribute("aria-pressed", v <= rating ? "true" : "false");
+        b.innerHTML = starSvg(v <= rating);
+        b.addEventListener("click", function(){
+          rating = (rating === v) ? 0 : v;   // tapping the current score clears it
+          paintStars();
+        });
+        rateEl.appendChild(b);
+      })(i);
+    }
+  }
+
+  triedChk.addEventListener("change", function(){
+    triedBox.hidden = !triedChk.checked;
+  });
 
   function openDialog(p){
     editingId = p ? p.id : null;
@@ -809,6 +950,12 @@
     document.getElementById("fMeal").value = p ? (p.meal||"") : "";
     document.getElementById("fDate").value = p ? (p.date||"") : "";
     document.getElementById("fNote").value = p ? (p.note||"") : "";
+    triedChk.checked = p ? isTried(p) : false;
+    triedBox.hidden = !triedChk.checked;
+    document.getElementById("fVisited").value = p ? (p.visited||"") : "";
+    document.getElementById("fVerdict").value = p ? (p.verdict||"") : "";
+    rating = p && p.rating ? p.rating : 0;
+    paintStars();
     err.style.display = "none";
     dlg.showModal();
     document.getElementById("fName").focus();
@@ -831,7 +978,11 @@
       land: document.getElementById("fLand").value.trim() || "Unsorted",
       meal: document.getElementById("fMeal").value,
       date: document.getElementById("fDate").value,
-      note: document.getElementById("fNote").value.trim()
+      note: document.getElementById("fNote").value.trim(),
+      tried: triedChk.checked,
+      visited: triedChk.checked ? document.getElementById("fVisited").value : "",
+      rating: triedChk.checked ? rating : 0,
+      verdict: triedChk.checked ? document.getElementById("fVerdict").value.trim() : ""
     };
     var target = null, editedExisting = !!editingId;
     if(editingId){
@@ -958,7 +1109,7 @@
      instead of clobbering each other. */
 
   var cloud = { on:false, db:null, user:null, unsub:null, empty:false, cache:false, err:"" };
-  var FIELDS = ["name","park","land","meal","date","lat","lng","must","note","ord"];
+  var FIELDS = ["name","park","land","meal","date","lat","lng","must","note","tried","visited","rating","verdict","ord"];
 
   var syncDot   = document.getElementById("syncDot");
   var syncWho   = document.getElementById("syncWho");

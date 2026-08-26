@@ -36,7 +36,11 @@ Worth knowing: `localStorage` is scoped per origin, so browser-only edits saved 
 
 ## Adding places
 
-Tap **Add pin**, tap the map, fill in the form. Turn on **Move pins** and drag anything that landed in the wrong spot. Tap the star on any card to flag it as a must do.
+Tap **Add**, fill in the form. A place doesn't need a pin — it'll show in the list either way, and the target button on its card drops one on the map whenever you get round to it.
+
+Four views across the top: **List** groups by land, **Map** shows the pins, **Timeline** lays out each day by meal, and **Tried** splits everything into what you've eaten and what's still waiting. Tick "We tried this" on any place to rate it out of five and write down what you thought.
+
+To fix a pin's position: turn on **Move pins** and drag it. Tap the star on any card to flag it as a must do.
 
 Signed in, every edit goes straight to the shared list and shows up on the other phone. Signed out, edits save to that browser only — **Copy backup** puts the whole list on your clipboard as JSON if you want a snapshot for safekeeping.
 
@@ -72,7 +76,13 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 | `land` | Free text. Groups the list. |
 | `lat` / `lng` | Decimal degrees |
 | `must` | `true` or `false`. Shows a gold Must do tag. |
-| `note` | Free text |
+| `note` | Free text, written before going |
+| `meal` | `breakfast`, `am`, `lunch`, `pm`, `dinner`, or empty |
+| `date` | `YYYY-MM-DD`. The day you plan to go. Drives the timeline. |
+| `tried` | `true` once you've been |
+| `visited` | `YYYY-MM-DD`. The day you actually went. |
+| `rating` | 0–5. 0 means unrated. |
+| `verdict` | Free text, written after |
 | `ord` | Number. Controls the order groups appear in. |
 
 ## Known rough edges

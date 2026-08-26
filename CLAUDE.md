@@ -25,7 +25,12 @@ Place data has two tiers:
 
 **Copy backup** serializes the current list to JSON on the clipboard. It is a one-way snapshot: nothing imports it back.
 
-A place record: `{ id, name, park: "dl"|"dca", land, type: "food"|"ride"|"show"|"shop", lat, lng, must, note, ord }`.
+A place record: `{ id, name, park: "dl"|"dca", land, meal, date, lat, lng, must, note, tried, visited, rating, verdict, ord }`.
+
+- `lat`/`lng` are **optional** — a place can sit in the list with no pin and get one later via `armPlacement()`. Anything touching coordinates goes through `hasCoords(p)` first: `drawMarkers` filters on it, `focus()` bails on it.
+- `meal` is `breakfast|am|lunch|pm|dinner` or `""`, ordered by `MEAL_ORDER` **chronologically** (AM snack between breakfast and lunch), which is how the timeline lays out a day.
+- `date` (planned) and `visited` (actual) are ISO `YYYY-MM-DD`, sortable as plain strings. `fmtDate` builds a **local** `Date` from explicit y/m/d parts — handing the string to `new Date()` parses as UTC and renders the previous day anywhere west of Greenwich.
+- `note` is written before going; `verdict` is written after. `rating` is 0–5, where 0 means unrated, and tapping the current score clears it back to 0.
 
 `ord` controls list grouping order. It exists because Firestore returns documents unordered and a multi-field `orderBy` would require a composite index, so the snapshot handler sorts client-side on `ord` instead. New pins get `nextOrd()`, one past the current maximum.
 
@@ -34,6 +39,7 @@ A place record: `{ id, name, park: "dl"|"dca", land, type: "food"|"ride"|"show"|
 A fourth, optional tier sits on top, in the cloud block at the end of the script. It is inert unless `window.FIREBASE_CONFIG` is non-null *and* the Firebase SDK loaded, both checked by `configured()`. When a user signs in:
 
 - `startWatch()` subscribes to the `places` collection and **`onSnapshot` becomes the owner of the `places` array** — it replaces the array wholesale and calls `render()`. Local mutation is still applied optimistically first; the snapshot echo reconciles it, and because the array is replaced rather than appended to, that cannot duplicate.
+- `persist(p, only)` takes an optional field list and writes with `{merge:true}`, so each action sends only what it touched: starring writes `{must}`, a drag writes `{lat,lng}`, the sheet writes its own fields. Two people editing one place then collide only if they change the *same field*. Omitting `only` writes the whole document — right for a new place, wrong for a targeted edit.
 - Every mutation goes through `persist(p)` / `persistDelete(id)`, which write a **single document** in cloud mode and fall back to `save()` (whole-array localStorage) when signed out. Never call `save()` directly from a mutation site — in cloud mode that would write a stale localStorage shadow that resurfaces after sign-out.
 - Firestore's offline cache means writes succeed with no network; their promises simply don't settle until the server acks, so error handlers must not assume failure from silence.
 - A `permission-denied` snapshot error sets `cloud.on = false`, dropping the session back to local mode. Without that the account is signed in but unauthorized, `persist()` still routes to Firestore, and every edit is written nowhere — rejected by the rules and skipped by the localStorage fallback.
@@ -42,7 +48,9 @@ The Firebase SDK is loaded as **compat** builds, deliberately: they are classic 
 
 ## Rendering model
 
-`render()` ([index.html:584](index.html#L584)) is the single entry point: filter `places` through `visible()`, then fully rebuild both the map markers and the list from scratch. There is no diffing or virtual DOM — markers are all removed and recreated, and `#list` is cleared and repopulated. Any state change ends in a `render()` call.
+Four views — `list`, `map`, `time`, `tried` — switched by `setView(v)`, which stamps `data-view` on `<body>` (CSS handles showing and hiding) and calls `map.invalidateSize()` when the map becomes visible again. **That call is load-bearing**: Leaflet measures its container as 0×0 while `display:none`, so without a re-measure the map comes back as a grey box.
+
+`render()` is the single entry point: filter `places` through `visible()`, then rebuild the markers plus one of the three list renderers from scratch. There is no diffing or virtual DOM — markers are all removed and recreated, and `#list` is cleared and repopulated. Any state change ends in a `render()` call.
 
 Filter state lives in one `state` object (park segment, per-type toggles, must-only, search query, plus the `adding`/`moving` modes). `visible()` ([index.html:437](index.html#L437)) is the sole place these combine.
 
