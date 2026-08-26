@@ -76,11 +76,6 @@
      top:0 fight - the lower one wins and hides the title, count and mode
      switch. Leaving this static also keeps it out of the stacking order, so
      the account menu is not trapped underneath the sticky bar. */
-  .appbar{
-    background:var(--bg);padding-top:calc(10px + env(safe-area-inset-top,0px))
-  }
-  .barrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px}
-  .barend{display:flex;align-items:center;gap:8px;flex:none}
   .acct{
     appearance:none;cursor:pointer;font-size:12.5px;font-weight:600;white-space:nowrap;
     padding:6px 12px;border-radius:999px;border:1px solid var(--brand);
@@ -88,17 +83,12 @@
   }
   .acct:active{transform:scale(.95)}
   .acct.in{background:var(--brand-soft);color:var(--brand);border-color:transparent}
-  .appbar h1{font-size:20px}
-  .appbar h1 .mm{color:var(--food)}
-  .appbar .sub{font-size:12.5px;color:var(--muted);margin-top:1px;font-weight:500}
   .count{
     font-size:12px;font-weight:600;color:var(--brand);background:var(--brand-soft);
     padding:5px 10px;border-radius:999px;white-space:nowrap
   }
 
   /* brand */
-  .brand{display:flex;align-items:center;gap:11px;min-width:0}
-  .brandtext{min-width:0}
   .mark{flex:none;width:40px;height:40px;display:block}
   .mark svg{width:100%;height:100%;display:block;filter:drop-shadow(0 2px 6px rgba(14,143,168,.34))}
   .mark .eye{transform-box:fill-box;transform-origin:center;animation:blink 6.5s infinite}
@@ -122,11 +112,21 @@
      that matters sits below the fold. */
   .stickybar{
     position:sticky;top:0;z-index:640;background:var(--bg);
-    border-bottom:1px solid var(--line);padding-bottom:8px;
-    padding-top:calc(8px + env(safe-area-inset-top,0px))
+    border-bottom:1px solid var(--line);padding:8px 0
   }
+  /* The name and the mark sit above the sticky bar and scroll away with the
+     page. They earn their room once, not on every screenful. */
+  .titlebar{padding:calc(12px + env(safe-area-inset-top,0px)) 0 10px}
+  .titlebar .wrap{display:flex;align-items:center;gap:11px}
+  .titlebar .mark{width:44px;height:44px;flex:none}
+  .titlebar h1{font-size:21px;line-height:1.1;min-width:0}
+  .titlebar h1 .mm{color:var(--food)}
+  .titlebar h1 em{
+    font-style:normal;font-size:13px;font-weight:500;color:var(--muted);
+    letter-spacing:.01em;white-space:nowrap
+  }
+
   .toprow{display:flex;align-items:center;gap:9px}
-  .toprow .mark{width:32px;height:32px}
   .toprow .searchbox{flex:1;min-width:0;padding:0;position:relative}
   .toprow .searchbox svg{left:13px;top:50%}
   .toprow #search{padding:9px 12px 9px 36px;font-size:15px;box-shadow:none}
@@ -163,11 +163,12 @@
 
 
 
-  /* The title still exists for screen readers and the tab; on screen the mark
-     carries the identity, because a phone cannot spare the row. */
   .sr{
     position:absolute;width:1px;height:1px;padding:0;margin:-1px;
     overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0
+  }
+  @media (max-width:359px){
+    .titlebar h1 em{display:none}
   }
 
   /* The three floating controls are one group in the corner, at one height.
@@ -543,8 +544,7 @@
   footer{padding:28px 16px 0;font-size:12px;line-height:1.7;color:var(--muted)}
 
   @media (min-width:860px){
-    .appbar h1{font-size:24px}
-    #map{height:58vh}
+      #map{height:58vh}
     .list{columns:2;column-gap:22px}
     .group{break-inside:avoid}
   }
@@ -557,8 +557,8 @@
 
 </div>
 
-<div class="stickybar">
-  <div class="wrap toprow">
+<header class="titlebar">
+  <div class="wrap">
     <span class="mark" aria-hidden="true">
           <svg viewBox="0 0 40 40" fill="none">
             <defs>
@@ -582,7 +582,12 @@
             <path class="tw tw2" d="M33.5 23Q33.5 26 36.5 26Q33.5 26 33.5 29Q33.5 26 30.5 26Q33.5 26 33.5 23Z" fill="var(--gold)"/>
           </svg>
         </span>
-    <h1 class="sr">Magic Munch Map</h1>
+    <h1>Magic <span class="mm">Munch</span> Map <em>(MMM&hellip;)</em></h1>
+  </div>
+</header>
+
+<div class="stickybar">
+  <div class="wrap toprow">
     <div class="searchbox">
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
     <input id="search" type="search" placeholder="Search dishes and places, or a, b, c for any" aria-label="Search">
