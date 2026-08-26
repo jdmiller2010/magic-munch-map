@@ -18,13 +18,13 @@
 // grant access to anything. Access is controlled entirely by the security
 // rules in firestore.rules. It is safe to commit and safe to serve publicly.
 
-window.FIREBASE_CONFIG = null;
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBf2Tpi2JaT8_da5e1w2E7jpGSeNJALcTA",
+  authDomain: "magic-munch-map.firebaseapp.com",
+  projectId: "magic-munch-map",
+  storageBucket: "magic-munch-map.firebasestorage.app",
+  messagingSenderId: "376760392499",
+  appId: "1:376760392499:web:5fd2a09f139b6ff7083c46",
+  measurementId: "G-JG1FYNS3FK"
+};
 
-// window.FIREBASE_CONFIG = {
-//   apiKey: "AIza...",
-//   authDomain: "magic-munch-map.firebaseapp.com",
-//   projectId: "magic-munch-map",
-//   storageBucket: "magic-munch-map.firebasestorage.app",
-//   messagingSenderId: "000000000000",
-//   appId: "1:000000000000:web:abcdef"
-// };
