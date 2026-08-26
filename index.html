@@ -175,7 +175,7 @@
      Left to right they run least- to most-used, so Add sits nearest the thumb
      and the chicken is furthest from an accidental tap. */
   .dock{
-    position:fixed;right:16px;bottom:calc(16px + var(--safe-b));z-index:700;
+    position:fixed;left:16px;bottom:calc(16px + var(--safe-b));z-index:700;
     display:flex;align-items:center;gap:9px
   }
   .dock > button{
@@ -186,7 +186,10 @@
     transition:transform .2s var(--spring)
   }
   .dock > button:active{transform:scale(.93)}
-  .viewpill{gap:7px;padding:0 15px}
+  /* Both of these swap their label - Map/List and Add/Drop pin. Without a
+     floor the whole dock shuffles sideways every time, and a button you were
+     aiming at moves out from under your thumb. */
+  .viewpill{gap:7px;padding:0 15px;min-width:96px}
   .viewpill svg{width:17px;height:17px}
   body[data-show="cards"] .viewpill .ic-list,
   body[data-show="map"] .viewpill .ic-map{display:none}
@@ -414,7 +417,7 @@
   .dotstat.warn{background:var(--gold)}
 
   /* fab */
-  .fab{gap:8px;padding:0 17px}
+  .fab{gap:8px;padding:0 17px;min-width:138px}
   /* Always there, bottom left, for the one search that matters most. Drawn
      after Google's Noto rooster. The silhouette is the part that matters: head
      high on the left, tail sweeping up to the SAME height on the right, body
