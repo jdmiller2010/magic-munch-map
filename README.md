@@ -8,7 +8,6 @@ A one-page static site for planning what to eat and ride at Disneyland and Calif
 - `places.js` — the data. This is the only file you need to touch day to day.
 - `README.md` — this
 - `CLAUDE.md` — orientation notes for Claude Code
-- `.github/workflows/deploy.yml` — publishes to GitHub Pages on every push to `main`
 - `CNAME` — the custom domain. Deleting it drops the site back to `jdmiller2010.github.io/magic-munch-map`.
 
 ## Run it
@@ -19,7 +18,7 @@ Open `index.html` in a browser. That's it. Tiles load from OpenStreetMap over th
 
 Any static host works. Two easy options:
 
-**GitHub Pages** — already wired up. `.github/workflows/deploy.yml` publishes the repo root on every push to `main`, and turns Pages on itself the first time it runs, so there is nothing to configure by hand. Live at **https://mmm.molendino.com** a minute or so after each push. Editing `places.js` in the GitHub web editor counts as a push, which means you can add a restaurant from your phone and have it live before you reach the front of the line.
+**GitHub Pages** — Settings → Pages → Source: **Deploy from a branch**, `main`, `/ (root)`. GitHub then republishes the repo root on every push to `main`. There is no build step, so no workflow is involved. Live at **https://mmm.molendino.com** a minute or so after each push. Editing `places.js` in the GitHub web editor counts as a push, which means you can add a restaurant from your phone and have it live before you reach the front of the line.
 
 **Netlify** — drag the folder onto app.netlify.com. Instant URL, custom domain if you want one.
 
@@ -28,7 +27,7 @@ Any static host works. Two easy options:
 The site is served at `mmm.molendino.com`. Two pieces make that work, and both need to be in place:
 
 - **DNS** — a `CNAME` record on `molendino.com`, name `mmm`, pointing at `jdmiller2010.github.io.` (trailing dot included).
-- **The `CNAME` file** in this repo. Because the site publishes from a GitHub Actions workflow rather than a branch, the domain also lives in Settings → Pages — but that setting has a habit of getting cleared, and this file restores it on every deploy. The workflow uploads the repo root, so the file ships automatically.
+- **The `CNAME` file** in this repo, which GitHub reads on every publish. Setting the custom domain in Settings → Pages normally creates this file for you; it is committed here already, so the setting should populate itself.
 
 Tick **Enforce HTTPS** in Settings → Pages once the certificate provisions. It's free, via Let's Encrypt, and can take anywhere from a minute to a few hours.
 
