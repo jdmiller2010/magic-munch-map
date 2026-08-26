@@ -66,9 +66,12 @@
   .wrap{max-width:1040px;margin:0 auto;padding:0 16px}
 
   /* app bar */
+  /* Deliberately NOT sticky. .stickybar below is, and two sticky siblings at
+     top:0 fight - the lower one wins and hides the title, count and mode
+     switch. Leaving this static also keeps it out of the stacking order, so
+     the account menu is not trapped underneath the sticky bar. */
   .appbar{
-    position:sticky;top:0;z-index:600;background:var(--bg);
-    border-bottom:1px solid var(--line);padding-top:calc(10px + env(safe-area-inset-top,0px))
+    background:var(--bg);padding-top:calc(10px + env(safe-area-inset-top,0px))
   }
   .barrow{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-bottom:10px}
   .barend{display:flex;align-items:center;gap:8px;flex:none}
@@ -107,7 +110,6 @@
   .seg button{white-space:nowrap}
   .controls{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
   .controls .seg{flex:1;margin-bottom:0;overflow:visible}
-  .showtog{display:none}
 
   /* Search and filters sit above the map so they are the top of the screen in
      either view, and stay put while the list scrolls under them. */
@@ -147,14 +149,11 @@
   body[data-show="map"] footer,
   body[data-show="map"] .arrange{display:none}
   /* The map takes the rest of the screen, which puts its bottom-right corner
-     and the viewport's in the same place - that is where Drop pin lives. */
+     and the viewport's in the same place - that is where Drop pin lives. The
+     height is measured in sizeMap(), because the bar above it changes height
+     with the safe area, the chips row and the mode. */
   body[data-show="map"] .mapwrap{padding:0}
-  body[data-show="map"] #map{
-    height:calc(100vh - 178px);min-height:320px;border-radius:0;border-left:0;border-right:0
-  }
-  @supports (height: 100dvh){
-    body[data-show="map"] #map{height:calc(100dvh - 178px)}
-  }
+  body[data-show="map"] #map{min-height:300px;border-radius:0;border-left:0;border-right:0}
   body[data-show="map"]{padding-bottom:0}
   .seg button{
     flex:1;appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
@@ -614,38 +613,33 @@
   </footer>
 </main>
 
-<div class="showtog" role="group" aria-label="Show as" hidden>
-  <button type="button" data-show="cards" aria-pressed="true"></button>
-  <button type="button" data-show="map" aria-pressed="false"></button>
-</div>
-
-<button type="button" class="viewpill" id="viewPill" aria-label="Switch between the list and the map">
-  <svg class="ic-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"><path d="M9 3L3 5.5v15L9 18l6 3 6-2.5v-15L15 6z"/><path d="M9 3v15M15 6v15"/></svg>
-  <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
-  <span class="lbl"></span>
+<button type="button" class="viewpill" id="viewPill">
+  <svg class="ic-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round" aria-hidden="true"><path d="M9 3L3 5.5v15L9 18l6 3 6-2.5v-15L15 6z"/><path d="M9 3v15M15 6v15"/></svg>
+  <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+  <span class="lbl">Map</span>
 </button>
 
 <button type="button" class="chick" id="chickBtn" aria-label="Find everything chicken">
   <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <path d="M20.5 19.5c4.6.4 7.6-2.6 8.3-7.2-2 2.8-4.1 3.7-5.9 3.5z" fill="#8f3327"/>
-    <path d="M20 21.4c5.2.8 8.6-2 9.5-7-2.3 3.2-5 4.2-7 4z" fill="#c9542f"/>
-    <path d="M19.5 23.2c4.8 1.3 8.2-1 9.8-5.4-2.5 2.6-5.1 3.1-7.1 2.7z" fill="#f0a500"/>
+    <path d="M20.5 19.6c4.8.3 7.9-2.8 8.6-7.6-2.1 3-4.3 3.9-6.2 3.7z" fill="#e0342b"/>
+    <path d="M20 21.5c5.4.7 9-2.2 9.9-7.4-2.4 3.4-5.2 4.4-7.3 4.2z" fill="#ffb020"/>
+    <path d="M19.5 23.3c5 1.2 8.6-1.2 10.2-5.8-2.6 2.8-5.3 3.3-7.4 2.9z" fill="#fffdf8"/>
     <g stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M13.6 26v2.6M12.2 30l1.4-1.4 1.4 1.4M13.6 28.6v1.6"/>
       <path d="M17.6 26v2.6M16.2 30l1.4-1.4 1.4 1.4M17.6 28.6v1.6"/>
     </g>
-    <ellipse cx="16" cy="20.2" rx="7.6" ry="6.6" fill="#a8402f"/>
-    <ellipse cx="13.6" cy="20.6" rx="4" ry="3.2" fill="#e07a4a"/>
+    <ellipse cx="16" cy="20.2" rx="7.7" ry="6.7" fill="#fffdf8"/>
+    <ellipse cx="13.4" cy="20.8" rx="4.1" ry="3.3" fill="#efe6d2"/>
     <g class="head">
-      <path d="M10.4 16.6c-1.2-2.2-.4-4.9 1.9-6l3.5 5.6z" fill="#a8402f"/>
-      <circle cx="10.8" cy="9.8" r="5" fill="#a8402f"/>
-      <path d="M7.6 4.9c.3-2.4 2.8-2.4 3.2-.3.8-2.2 3.3-1.7 3.1.6-.1 1.4-1 2.4-2 2.8z" fill="#e0342b"/>
-      <path d="M5.6 9.4L1.2 10.9l4.4 1.6z" fill="#ffc247"/>
-      <path d="M7.6 13.6c1.7.5 1.7 2.9-.4 2.9-1.8 0-2.1-2.4.4-2.9z" fill="#e0342b"/>
-      <circle cx="9.6" cy="8.9" r="2.2" fill="#fffdf8"/>
-      <circle cx="9.1" cy="9.2" r="1.25" fill="#1a1108"/>
-      <circle cx="8.7" cy="8.7" r=".45" fill="#fff"/>
-      <circle cx="13.6" cy="11.8" r="1.5" fill="#e07a4a" opacity=".7"/>
+      <path d="M10.3 16.8c-1.3-2.3-.4-5.1 2-6.2l3.6 5.8z" fill="#fffdf8"/>
+      <circle cx="10.7" cy="9.6" r="5.1" fill="#fffdf8"/>
+      <path d="M6.6 5.2c-.1-2.9 3-3.3 3.6-.9.6-3 4-2.7 4 .3 1.9-1.6 4 .4 2.9 2.4-.9 1.6-2.7 2.4-4.6 2.5z" fill="#e0342b"/>
+      <path d="M5.4 9.2L.8 10.8l4.6 1.7z" fill="#ffb020"/>
+      <path d="M7.3 13.6c1.9.5 1.9 3.2-.4 3.2-2 0-2.3-2.7.4-3.2z" fill="#e0342b"/>
+      <circle cx="9.5" cy="8.8" r="2.3" fill="#fffdf8" stroke="#cbbfa8" stroke-width=".5"/>
+      <circle cx="9" cy="9.1" r="1.3" fill="#1a1108"/>
+      <circle cx="8.55" cy="8.6" r=".5" fill="#fff"/>
+      <circle cx="13.6" cy="11.9" r="1.5" fill="#f6a9a2" opacity=".85"/>
     </g>
   </svg>
 </button>
@@ -1454,7 +1448,9 @@
   // Flat, ordered result set for Explore. Sections are applied at draw time;
   // the map needs one list with coordinates resolved.
   function exploreList(){
-    var have = savedMenuKeys(), out = [];
+    // Dishes and places are capped separately: four thousand dishes in one
+    // list would push every place past the cut.
+    var have = savedMenuKeys(), out = [], spots = [];
 
     function pushDish(m){
       var c = hitCoords(m);
@@ -1474,11 +1470,13 @@
         if(!textMatches(m.dish + " " + m.venue + " " + (m.desc || ""))) return;
         pushDish(m);
       });
-      if(all) venues.forEach(function(v){
+      // Places are always searchable. Scope narrows which dishes are in play,
+      // but "search for a restaurant" should not depend on it.
+      venues.forEach(function(v){
         if(!state.parks[v.park]) return;
         if(!textMatches(v.name + " " + (v.cuisine || ""))) return;
-        out.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
-                   owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
+        spots.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+                     owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
       });
       // photographed, seasonal things first - they are the ones worth looking at
       out.sort(function(a, b){
@@ -1494,10 +1492,12 @@
       });
       if(all) venues.forEach(function(v){
         if(!state.parks[v.park]) return;
-        out.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
-                   owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
+        spots.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+                     owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
       });
     }
+
+    out = out.slice(0, 200).concat(spots.slice(0, 40));
 
     if(state.here){
       out.sort(function(a, b){
@@ -1506,7 +1506,7 @@
         return da - db;
       });
     }
-    return out.slice(0, 250);
+    return out;
   }
 
   function drawExploreCards(host, list){
@@ -1848,6 +1848,19 @@
     document.getElementById("map").style.cursor = "";
   }
 
+  // The sticky bar's height depends on the safe area, the chips row and which
+  // mode is showing, so measure it rather than hardcoding a number.
+  function sizeMap(){
+    if(state.show !== "map") return;
+    var bar = document.querySelector(".stickybar");
+    var top = bar ? bar.getBoundingClientRect().bottom : 0;
+    var el = document.getElementById("map");
+    el.style.height = Math.max(300, window.innerHeight - top) + "px";
+    map.invalidateSize();
+  }
+  window.addEventListener("resize", sizeMap);
+  window.addEventListener("orientationchange", function(){ setTimeout(sizeMap, 250); });
+
   function setMode(m){
     state.mode = m;
     document.body.setAttribute("data-mode", m);
@@ -1861,12 +1874,10 @@
     if(v !== "map") cancelPlacement();   // else a stray tap later moves a forgotten place
     state.show = v;
     document.body.setAttribute("data-show", v);
-    document.querySelectorAll(".seg button[data-show]").forEach(function(b){
-      b.setAttribute("aria-pressed", b.dataset.show === v ? "true" : "false");
-    });
     // Leaflet measures 0x0 while the container is display:none, so it has to be
     // told to re-measure once the map is actually on screen again.
-    if(v === "map") setTimeout(function(){ map.invalidateSize(); }, 0);
+    if(v === "map") setTimeout(sizeMap, 0);
+    else document.getElementById("map").style.height = "";
     if(fabLabel) fabLabel.textContent = v === "map" ? "Drop pin" : "Add";
     var pill = document.getElementById("viewPill");
     if(pill) pill.querySelector(".lbl").textContent = v === "map" ? "List" : "Map";
@@ -2113,10 +2124,6 @@
   document.querySelectorAll(".seg button[data-mode]").forEach(function(b){
     b.addEventListener("click", function(){ setMode(b.dataset.mode); });
   });
-  document.querySelectorAll(".seg button[data-show]").forEach(function(b){
-    b.addEventListener("click", function(){ setShow(b.dataset.show); });
-  });
-
   var viewPill = document.getElementById("viewPill");
   viewPill.addEventListener("click", function(){
     setShow(state.show === "map" ? "cards" : "map");
