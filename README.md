@@ -72,6 +72,14 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 - **Signed out**, nothing changes from before: the shared list plus this browser's `localStorage`.
 - Signing in does **not** touch `localStorage`, so signing out returns you to whatever you had before, untouched.
 
+## Install it
+
+It's a PWA. On Android, Chrome offers **Install app** (also in the app menu); on iOS, Share → **Add to Home Screen**. Either way you get a launcher icon and a standalone window with no browser chrome.
+
+Worth doing on iPhone specifically: an installed PWA is **exempt from Safari's seven-day eviction of script-written storage**, so pins saved in the browser stop quietly vanishing between trips.
+
+The service worker caches the app shell, the fonts, Leaflet, the Firebase SDK, and map tiles **as you browse them** — walking the park once on wifi leaves you with usable tiles offline. It never prefetches tiles, which OpenStreetMap's tile policy forbids, and it never intercepts Firestore, Firebase auth or the Disney endpoints, since caching a live sync connection breaks it.
+
 ## Using it
 
 **Your list is the point.** Open the app, and List answers "what's on my list, and what's near me?" — tap **Near me** and everything reorders by walking distance with a distance on each card.
