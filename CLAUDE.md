@@ -80,6 +80,10 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 ### Catalogs, and the shape of the app
 
+**Meals are multi-select, and nothing selected means no filter.** `state.meals` is a set; `mealOk()` passes anything answering to *any* chosen meal. That is the opposite default to the park chips (all on) — deliberately, because you narrow to one or two meals and rarely exclude one, and the sheet's wording carries the difference.
+
+**Seasonal items are exempt from the meal filter.** Every one of the 195 blog items has no service time — the foodie guide never states one. Judging them on a meal would have silently emptied the whole Seasonal section, which is Explore's default scope. `mealOkCatalog()` lets them through, and the filter sheet hides the meal group entirely when Explore is scoped to seasonal.
+
 **Disney's menu sections are not the app's meals.** `mealsFor()` maps a `period` label to zero or more meal keys: "Lunch And Dinner" (1,457 items, the largest bucket) answers to both, "Snack" to AM and PM since it says nothing about which, "Special" and "Lounge" to neither. Matching on the `meal` key alone left 2,737 of 4,020 items unreachable by the filter. Every meal check goes through `mealOk()` — `visible()` and the Explore filter both — so the two cannot drift.
 
 **Explore caps each section separately.** One shared cap meant the 193 seasonal items were pushed first and the menu got the remainder: seven of nearly four thousand, so a venue with a large menu looked empty.

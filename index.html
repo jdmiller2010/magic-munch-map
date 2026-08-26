@@ -155,6 +155,7 @@
   .flabel{
     display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px
   }
+  .flabel em{font-style:normal;font-weight:500;opacity:.75}
   .fchips{display:flex;flex-wrap:wrap;gap:7px}
   .fchips .chip{flex:none}
   #filterDlg .two{flex-wrap:wrap}
@@ -727,20 +728,20 @@
       </div>
     </div>
 
-    <div class="two">
-      <div class="field">
-        <label for="mealPick">Meal</label>
-        <select id="mealPick">
-          <option value="">Any meal</option>
-          <option value="breakfast">Breakfast</option>
-          <option value="am">AM Snack</option>
-          <option value="lunch">Lunch</option>
-          <option value="pm">PM Snack</option>
-          <option value="dinner">Dinner</option>
-          <option value="dessert">Dessert</option>
-          <option value="none">Unplanned</option>
-        </select>
+    <div class="fgroup" id="fMeals">
+      <span class="flabel" id="mealLabel">Meals <em>&mdash; any, unless you pick some</em></span>
+      <div class="fchips">
+        <button type="button" class="chip" data-meal="breakfast" aria-pressed="false">Breakfast</button>
+        <button type="button" class="chip" data-meal="am" aria-pressed="false">AM Snack</button>
+        <button type="button" class="chip" data-meal="lunch" aria-pressed="false">Lunch</button>
+        <button type="button" class="chip" data-meal="pm" aria-pressed="false">PM Snack</button>
+        <button type="button" class="chip" data-meal="dinner" aria-pressed="false">Dinner</button>
+        <button type="button" class="chip" data-meal="dessert" aria-pressed="false">Dessert</button>
+        <button type="button" class="chip" id="mealNone" data-meal="none" aria-pressed="false">Unplanned</button>
       </div>
+    </div>
+
+    <div class="two">
       <div class="field" id="fGroup">
         <label for="groupBy">Arrange by</label>
         <select id="groupBy">
@@ -891,7 +892,7 @@
     group:"area",        // area | day | tried  (only meaningful for mine)
     parks:{ dl:true, dca:true, dtd:true },
     scope:"seasonal",    // explore: seasonal | all
-    meal:"",             // "" = any
+    meals:{},            // selected meal keys; empty means any
     mustOnly:false, query:"", terms:null, moving:false,
     here:null            // {lat,lng} once geolocation has answered
   };
@@ -989,12 +990,24 @@
     return out;
   }
 
-  function mealOk(p){
-    if(!state.meal) return true;
-    var ms = mealsFor(p);
-    if(state.meal === "none") return ms.length === 0;
-    return ms.indexOf(state.meal) !== -1;
+  // Nothing picked means no meal filter at all; otherwise a place qualifies if
+  // it answers to any of the picked meals.
+  function anyMeal(){
+    for(var k in state.meals){ if(state.meals[k]) return true; }
+    return false;
   }
+
+  function mealOk(p){
+    if(!anyMeal()) return true;
+    var ms = mealsFor(p);
+    if(state.meals.none && ms.length === 0) return true;
+    for(var i = 0; i < ms.length; i++){ if(state.meals[ms[i]]) return true; }
+    return false;
+  }
+
+  // Seasonal blog items have no service time at all - every one of them. A
+  // meal filter has no evidence to judge them on, so it does not try.
+  function mealOkCatalog(m){ return m.seasonal ? true : mealOk(m); }
 
   function mealKey(p){ return p.meal || "none"; }
 
@@ -1753,7 +1766,7 @@
       CATALOG.forEach(function(m){
         if(!all && !m.seasonal) return;
         if(m.park && !state.parks[m.park]) return;
-        if(!mealOk(m)) return;
+        if(!mealOkCatalog(m)) return;
         if(!textMatches(m.dish + " " + m.venue + " " + (m.desc || ""))) return;
         pushDish(m);
       });
@@ -2148,7 +2161,7 @@
 
   function activeFilters(){
     var n = 0;
-    if(state.meal) n++;
+    Object.keys(state.meals).forEach(function(k){ if(state.meals[k]) n++; });
     if(state.mustOnly) n++;
     if(state.here) n++;
     Object.keys(state.parks).forEach(function(k){ if(!state.parks[k]) n++; });
@@ -2441,10 +2454,6 @@
     state.group = document.getElementById("groupBy").value;
     render();
   });
-  document.getElementById("mealPick").addEventListener("change", function(){
-    state.meal = document.getElementById("mealPick").value;
-    render();
-  });
   document.getElementById("scopePick").addEventListener("change", function(){
     state.scope = document.getElementById("scopePick").value;
     render();
@@ -2452,17 +2461,30 @@
 
   var filterDlg = document.getElementById("filterDlg");
   document.getElementById("filterBtn").addEventListener("click", function(){
-    // Only offer what applies to the mode you are in.
-    document.getElementById("fScope").hidden = state.mode !== "explore";
-    document.getElementById("fGroup").hidden = state.mode !== "mine";
+    // Only offer what applies to the mode you are in, and what the data can
+    // actually answer.
+    var explore = state.mode === "explore";
+    document.getElementById("fScope").hidden = !explore;
+    document.getElementById("fGroup").hidden = explore;
+
+    // The foodie guide never states a service time, so not one seasonal item
+    // carries a meal. Offering the filter there would silently empty the
+    // section with no way to tell why.
+    var mealsUseful = !explore || state.scope === "all";
+    document.getElementById("fMeals").hidden = !mealsUseful;
+    // "Unplanned" is about your own planning, not about when a kitchen serves.
+    document.getElementById("mealNone").hidden = explore;
+    document.getElementById("mealLabel").innerHTML = explore
+      ? "Served at <em>&mdash; any, unless you pick some</em>"
+      : "Meals <em>&mdash; any, unless you pick some</em>";
+
     filterDlg.showModal();
   });
   document.getElementById("filterDone").addEventListener("click", function(){ filterDlg.close(); });
   document.getElementById("filterClear").addEventListener("click", function(){
-    state.meal = ""; state.group = "area"; state.scope = "seasonal";
+    state.meals = {}; state.group = "area"; state.scope = "seasonal";
     state.mustOnly = false; state.here = null;
     state.parks = { dl:true, dca:true, dtd:true };
-    document.getElementById("mealPick").value = "";
     document.getElementById("groupBy").value = "area";
     document.getElementById("scopePick").value = "seasonal";
     document.querySelectorAll(".chip").forEach(function(c){
@@ -2481,6 +2503,7 @@
       }
       else if(c.hasAttribute("data-must")) state.mustOnly = !on;
       else if(c.dataset.park) state.parks[c.dataset.park] = !on;
+      else if(c.dataset.meal) state.meals[c.dataset.meal] = !on;
       if(c.dataset.park) recenter();   // meal/must filters must not yank the map
       render();
     });
