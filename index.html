@@ -100,6 +100,23 @@
   }
   .seg::-webkit-scrollbar{display:none}
   .seg button{white-space:nowrap}
+  .controls{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
+  .controls .seg{flex:1;margin-bottom:0;overflow:visible}
+  .controls .seg.tog{flex:none;width:88px}
+  .seg.tog button{padding:7px 0;display:flex;align-items:center;justify-content:center}
+  .seg.tog svg{width:18px;height:18px}
+
+  .arrange{display:flex;gap:8px;padding:10px 16px 0}
+  .arrange select{
+    flex:1;min-width:0;font-family:inherit;font-size:13px;font-weight:600;
+    padding:9px 10px;border:1px solid var(--line);border-radius:var(--r-sm);
+    background:var(--surface);color:var(--ink);box-shadow:var(--shadow)
+  }
+  body[data-mode="explore"] .arrange{display:none}
+  body[data-show="cards"] .mapwrap{display:none}
+  body[data-show="map"] .list,
+  body[data-show="map"] .arrange{display:none}
+  body[data-show="map"] #map{height:68vh}
   .seg button{
     flex:1;appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
     font-size:13px;font-weight:600;padding:8px 4px;border-radius:9px;transition:background .18s,color .18s
@@ -161,14 +178,6 @@
   .chip.sep::before{content:"";position:absolute;left:-9px;top:6px;bottom:6px;width:1px;background:var(--line)}
 
   /* view switching */
-  body[data-view="list"] .mapwrap,
-  body[data-view="time"] .mapwrap,
-  body[data-view="tried"] .mapwrap,
-  body[data-view="explore"] .mapwrap{display:none}
-  body[data-view="map"] .list,
-  body[data-view="map"] .tools{display:none}
-  body[data-view="map"] #map{height:64vh}
-  body[data-view="time"] .chips{padding-bottom:2px}
 
   /* timeline */
   .dayhead{
@@ -316,6 +325,26 @@
     font-size:14.5px;font-weight:600;padding:14px 20px;box-shadow:var(--shadow-lg);
     display:flex;align-items:center;gap:8px;transition:transform .2s var(--spring)
   }
+  /* Always there, bottom left, for the one search that matters most. The head
+     dips to peck every so often - the same trick as the blink in the logo. */
+  .chick{
+    position:fixed;left:16px;bottom:calc(16px + var(--safe-b));z-index:700;
+    appearance:none;cursor:pointer;border:0;border-radius:999px;width:56px;height:56px;
+    background:var(--gold);box-shadow:var(--shadow-lg);padding:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .2s var(--spring)
+  }
+  .chick svg{width:34px;height:34px;display:block}
+  .chick:active{transform:scale(.9)}
+  /* One dip every seven seconds or so - present, not fidgety. Long enough that
+     you are not sure you saw it, short enough that it happens again while you
+     are still looking. Same idea as the blink in the logo. */
+  .chick .head{transform-box:fill-box;transform-origin:78% 92%;animation:peck 7s ease-in-out infinite}
+  @keyframes peck{
+    0%,91%,100%{transform:rotate(0) translateY(0)}
+    95%{transform:rotate(24deg) translateY(3px)}
+  }
+
   .fab{animation:bob 3.6s ease-in-out infinite}
   .fab:active{animation:none;transform:scale(.94)}
   @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-3.5px)}}
@@ -473,12 +502,19 @@
         </div>
       </div>
     </div>
-    <div class="seg" role="group" aria-label="View">
-      <button type="button" data-view="list" aria-pressed="true">List</button>
-      <button type="button" data-view="map" aria-pressed="false">Map</button>
-      <button type="button" data-view="time" aria-pressed="false">Timeline</button>
-      <button type="button" data-view="tried" aria-pressed="false">Tried</button>
-      <button type="button" data-view="explore" aria-pressed="false">Explore</button>
+    <div class="controls">
+      <div class="seg" role="group" aria-label="What you are looking at">
+        <button type="button" data-mode="mine" aria-pressed="true">My list</button>
+        <button type="button" data-mode="explore" aria-pressed="false">Explore</button>
+      </div>
+      <div class="seg tog" role="group" aria-label="Show as">
+        <button type="button" data-show="cards" aria-pressed="true" aria-label="Show as a list">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+        </button>
+        <button type="button" data-show="map" aria-pressed="false" aria-label="Show on the map">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 3L3 5.5v15L9 18l6 3 6-2.5v-15L15 6z"/><path d="M9 3v15M15 6v15"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </div>
@@ -498,13 +534,24 @@
     <button type="button" class="chip" data-park="dtd" aria-pressed="true">Downtown Disney</button>
     <button type="button" class="chip sep" data-near aria-pressed="false">Near me</button>
     <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
-    <button type="button" class="chip" data-meal="breakfast" aria-pressed="true">Breakfast</button>
-    <button type="button" class="chip" data-meal="am" aria-pressed="true">AM Snack</button>
-    <button type="button" class="chip" data-meal="lunch" aria-pressed="true">Lunch</button>
-    <button type="button" class="chip" data-meal="pm" aria-pressed="true">PM Snack</button>
-    <button type="button" class="chip" data-meal="dinner" aria-pressed="true">Dinner</button>
-    <button type="button" class="chip" data-meal="dessert" aria-pressed="true">Dessert</button>
-    <button type="button" class="chip" data-meal="none" aria-pressed="true">Unplanned</button>
+  </div>
+
+  <div class="arrange" id="arrange">
+    <select id="groupBy" aria-label="Group by">
+      <option value="area">By area</option>
+      <option value="day">By day</option>
+      <option value="tried">Tried &amp; to try</option>
+    </select>
+    <select id="mealPick" aria-label="Meal">
+      <option value="">Any meal</option>
+      <option value="breakfast">Breakfast</option>
+      <option value="am">AM Snack</option>
+      <option value="lunch">Lunch</option>
+      <option value="pm">PM Snack</option>
+      <option value="dinner">Dinner</option>
+      <option value="dessert">Dessert</option>
+      <option value="none">Unplanned</option>
+    </select>
   </div>
 
   <div class="searchbox">
@@ -520,6 +567,20 @@
     Not affiliated with, endorsed by, or sponsored by Disney.
   </footer>
 </main>
+
+<button type="button" class="chick" id="chickBtn" aria-label="Find chicken strips and tenders">
+  <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <ellipse cx="17.5" cy="20" rx="8.5" ry="7.5" fill="#fffdf8"/>
+    <path d="M11 26.5l-1.5 3M16 27.5l-1 3" stroke="#c9821f" stroke-width="1.8" stroke-linecap="round"/>
+    <path d="M22 17c2.4 1 3.6 2.9 3.6 5.2" stroke="#e8d9c2" stroke-width="1.5" stroke-linecap="round"/>
+    <g class="head">
+      <circle cx="10" cy="12.5" r="5" fill="#fffdf8"/>
+      <path d="M8.6 7.6c.5-1.6 2.4-1.7 2.8 0 .9-1.2 2.4-.5 2 1" fill="#e2453c"/>
+      <path d="M5.2 12.6l-3.1 1.1 3.1 1.2z" fill="#f0a500"/>
+      <circle cx="9.2" cy="11.6" r="1.15" fill="#2c2317"/>
+    </g>
+  </svg>
+</button>
 
 <button type="button" class="fab" id="addBtn">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -642,13 +703,33 @@
   var ZOOM   = { all:16, dl:17, dca:17, dtd:17 };
   var GLYPH = '<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>';
 
+  /* Two concepts, two presentations. `mode` is what you are looking at - your
+     own list, or everything out there. `show` is how - cards or the map. They
+     are independent, which is the whole point: "my list on a map" and "search
+     results as a list" are both things you want. */
   var state = {
-    view:"list",
+    mode:"mine",         // mine | explore
+    show:"cards",        // cards | map
+    group:"area",        // area | day | tried  (only meaningful for mine)
     parks:{ dl:true, dca:true, dtd:true },
-    meals:{ breakfast:true, am:true, lunch:true, pm:true, dinner:true, dessert:true, none:true },
-    mustOnly:false, query:"", moving:false,
+    meal:"",             // "" = any
+    mustOnly:false, query:"", terms:null, moving:false,
     here:null            // {lat,lng} once geolocation has answered
   };
+
+  // The chicken button searches several phrases at once; typed queries are a
+  // single substring. One helper so every filter agrees on what "matches" is.
+  function textMatches(text){
+    var t = String(text || "").toLowerCase();
+    if(state.terms && state.terms.length){
+      for(var i = 0; i < state.terms.length; i++){
+        if(t.indexOf(state.terms[i]) !== -1) return true;
+      }
+      return false;
+    }
+    return !state.query || t.indexOf(state.query) !== -1;
+  }
+  function searching(){ return !!(state.query || (state.terms && state.terms.length)); }
   var places = load();
   var markers = {};
   var placingId = null;   // id of the place waiting for a map tap
@@ -751,9 +832,50 @@
      foodie guide. Like the venue list it is a *source*, never content: nothing
      from it appears in your list until you add it, which is the whole point. */
 
-  var MENU = (window.MENU || []).slice();                                  // blog: seasonal, photographed
   var DINING = window.DINING || {};
-  var DISHES = (DINING.items || []).slice();                               // official menus: priced
+
+  /* The two sources overlap: about a third of the blog's seasonal items also
+     sit on the official menu. Neither is a superset - the blog has the photo
+     and the season, the menu has the price - so they are merged into one
+     catalog per dish rather than shown twice. */
+  var CATALOG = (function(){
+    var blog = window.MENU || [], official = DINING.items || [];
+    var byKey = {}, out = [];
+
+    blog.forEach(function(m){
+      var k = norm(m.dish) + "|" + norm(m.venue);
+      if(byKey[k]) return;                       // the blog repeats a few itself
+      var row = {
+        dish:m.dish, venue:m.venue, park:m.park, land:m.land, desc:m.desc,
+        image:m.image, season:m.season, source:m.source, price:"", period:"", meal:"",
+        seasonal:true
+      };
+      byKey[k] = row;
+      out.push(row);
+    });
+
+    official.forEach(function(m){
+      var k = norm(m.dish) + "|" + norm(m.venue);
+      var hit = byKey[k];
+      if(hit){
+        // Keep the photo and the season, take the price and meal period.
+        if(!hit.price)  hit.price  = m.price || "";
+        if(!hit.period) hit.period = m.period || "";
+        if(!hit.meal)   hit.meal   = m.meal || "";
+        if(!hit.desc)   hit.desc   = m.desc || "";
+        if(!hit.land)   hit.land   = m.land || "";
+        return;
+      }
+      var row = {
+        dish:m.dish, venue:m.venue, park:m.park, land:m.land, desc:m.desc,
+        image:"", season:"", source:DINING.itemSource || "", price:m.price || "",
+        period:m.period || "", meal:m.meal || "", seasonal:false
+      };
+      byKey[k] = row;
+      out.push(row);
+    });
+    return out;
+  })();
   var DETAIL = {};
   (DINING.details || []).forEach(function(d){ DETAIL[norm(d.name)] = d; });
 
@@ -1056,6 +1178,18 @@
     });
   }
 
+  function hitPopup(r){
+    if(r.hit === "venue"){
+      return '<div class="pop"><b>' + esc(r.v.name) + '</b><div class="m">' +
+             esc(venueBlurb(r.v)) + '</div></div>';
+    }
+    var m = r.m;
+    return '<div class="pop"><b>' + esc(m.dish) + '</b><div class="m">' +
+           esc([m.venue, m.land, m.price].filter(Boolean).join(" \u00b7 ")) + '</div>' +
+           (m.desc ? '<div class="n">' + esc(m.desc) + '</div>' : '') +
+           (m.season ? '<div class="g">' + esc(m.season) + '</div>' : '') + '</div>';
+  }
+
   function popupHtml(p){
     var bits = [PARKS[p.park], p.land, MEAL_LABEL[p.meal], fmtDate(p.date)].filter(Boolean).join(" · ");
     return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
@@ -1066,12 +1200,9 @@
 
   function visible(p){
     if(p.park && !state.parks[p.park]) return false;
-    if(!state.meals[mealKey(p)]) return false;
+    if(state.meal && mealKey(p) !== state.meal) return false;
     if(state.mustOnly && !p.must) return false;
-    if(state.query){
-      var hay = (p.name+" "+(p.land||"")+" "+(p.note||"")).toLowerCase();
-      if(hay.indexOf(state.query) === -1) return false;
-    }
+    if(!textMatches(p.name + " " + (p.venue||"") + " " + (p.land||"") + " " + (p.note||"") + " " + (p.desc||""))) return false;
     return true;
   }
 
@@ -1079,8 +1210,9 @@
     Object.keys(markers).forEach(function(id){ map.removeLayer(markers[id]); });
     markers = {};
     shown.filter(hasCoords).forEach(function(p){
-      var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:state.moving,title:p.name});
-      m.bindPopup(popupHtml(p));
+      var draggable = state.moving && state.mode === "mine";
+      var m = L.marker([p.lat,p.lng],{icon:icon(p),draggable:draggable,title:p.name});
+      m.bindPopup(p.hit ? hitPopup(p) : popupHtml(p));
       m.on("dragend",function(e){
         var ll = e.target.getLatLng();
         p.lat = +ll.lat.toFixed(5);
@@ -1238,23 +1370,15 @@
     return el;
   }
 
-  function exploreHits(){
-    var q = state.query;
-    var have = savedMenuKeys();
-    function keep(m){
-      if(m.park && !state.parks[m.park]) return false;
-      if(!q) return false;
-      return (m.dish + " " + m.venue + " " + (m.desc || "")).toLowerCase().indexOf(q) !== -1;
-    }
-    return {
-      seasonal: q ? MENU.filter(keep).slice(0, 40) : MENU.slice(0, 60),
-      menu:     q ? DISHES.filter(keep).slice(0, 40) : [],
-      venues:   q ? venues.filter(function(v){
-                      if(!state.parks[v.park]) return false;
-                      return (v.name + " " + (v.cuisine || "")).toLowerCase().indexOf(q) !== -1;
-                    }).slice(0, 20) : [],
-      have: have
-    };
+  function section(host, title, count){
+    var sec = document.createElement("section");
+    sec.className = "group";
+    var h = document.createElement("div");
+    h.className = "dayhead";
+    h.innerHTML = '<span class="nm">' + esc(title) + '</span><span class="ct">' + count + '</span>';
+    sec.appendChild(h);
+    host.appendChild(sec);
+    return sec;
   }
 
   function venueCard(v, owned){
@@ -1265,19 +1389,22 @@
     sw.style.background = FOOD;
     sw.innerHTML = svg(GLYPH, 2);
     el.appendChild(sw);
+
     var body = document.createElement("div");
     body.className = "body";
     var nm = document.createElement("div");
     nm.className = "name";
     nm.textContent = v.name;
     body.appendChild(nm);
+
     var d = DETAIL[norm(v.name)] || {};
-    var sub2 = document.createElement("div");
-    sub2.className = "venue";
-    sub2.textContent = [venueBlurb(v), d.price, d.reservations ? "Reservations" : ""]
-                        .filter(Boolean).join(" \u00b7 ");
-    body.appendChild(sub2);
+    var sub = document.createElement("div");
+    sub.className = "venue";
+    sub.textContent = [venueBlurb(v), d.price, d.reservations ? "Reservations" : ""]
+                       .filter(Boolean).join(" \u00b7 ");
+    body.appendChild(sub);
     el.appendChild(body);
+
     var acts = document.createElement("div");
     acts.className = "acts one";
     var add = document.createElement("button");
@@ -1297,98 +1424,83 @@
     return el;
   }
 
-  function section(host, title, count){
-    var sec = document.createElement("section");
-    sec.className = "group";
-    var h = document.createElement("div");
-    h.className = "dayhead";
-    h.innerHTML = '<span class="nm">' + esc(title) + '</span><span class="ct">' + count + '</span>';
-    sec.appendChild(h);
-    host.appendChild(sec);
-    return sec;
+  function hitCoords(m){
+    var v = venueByName(m.venue);
+    return v ? { lat:v.lat, lng:v.lng } : null;
   }
 
-  function drawExplore(){
-    var host = document.getElementById("list");
-    host.innerHTML = "";
-    var r = exploreHits();
-    var owned = {};
-    places.forEach(function(p){ owned[norm(p.name) + "|" + norm(p.venue || "")] = true; });
+  // Flat, ordered result set for Explore. Sections are applied at draw time;
+  // the map needs one list with coordinates resolved.
+  function exploreList(){
+    var have = savedMenuKeys(), out = [];
 
-    if(!MENU.length && !DISHES.length && !venues.length){
-      var none = document.createElement("p");
-      none.className = "empty";
-      none.textContent = "No catalog loaded. Run tools/refresh_data.py and tools/extract_menu.py.";
-      host.appendChild(none);
-      return;
+    function pushDish(m){
+      var c = hitCoords(m);
+      // NOT `kind`: saved places already use that for the OSM amenity type,
+      // and a saved restaurant would then be mistaken for an explore hit.
+      out.push({ hit:"dish", m:m, name:m.dish, owned:!!have[menuKey(m)],
+                 lat:c ? c.lat : null, lng:c ? c.lng : null });
     }
 
-    if(r.seasonal.length){
-      var s1 = section(host, state.query ? "Seasonal" : "Seasonal right now", r.seasonal.length);
-      r.seasonal.forEach(function(m){ s1.appendChild(menuCard(m, !!r.have[menuKey(m)])); });
-    }
-    if(r.menu.length){
-      var s2 = section(host, "On the menu", r.menu.length);
-      r.menu.forEach(function(m){ s2.appendChild(menuCard(m, !!r.have[menuKey(m)])); });
-    }
-    if(r.venues.length){
-      var s3 = section(host, "Places", r.venues.length);
-      r.venues.forEach(function(v){ s3.appendChild(venueCard(v, !!owned[norm(v.name) + "|"])); });
-    }
-    if(!host.children.length){
-      var e = document.createElement("p");
-      e.className = "empty";
-      e.textContent = state.query ? "Nothing matches that. Try a dish or a restaurant name."
-                                  : "Search for a dish or a place to explore.";
-      host.appendChild(e);
-    }
-  }
-
-  function drawMenu(){
-    var host = document.getElementById("list");
-    host.innerHTML = "";
-    if(!MENU.length){
-      var none = document.createElement("p");
-      none.className = "empty";
-      none.textContent = "No menu data loaded. Run tools/extract_menu.py to build menu.js.";
-      host.appendChild(none);
-      return;
-    }
-    var have = savedMenuKeys();
-    var hits = MENU.filter(function(m){
-      if(m.park && !state.parks[m.park]) return false;
-      if(!state.query) return true;
-      return (m.dish + " " + m.venue + " " + (m.desc || "")).toLowerCase().indexOf(state.query) !== -1;
-    });
-
-    if(!hits.length){
-      var e = document.createElement("p");
-      e.className = "empty";
-      e.textContent = "Nothing on the menu matches that.";
-      host.appendChild(e);
-      return;
-    }
-
-    var order = [], groups = {};
-    hits.forEach(function(m){
-      var key = (m.park || "") + "|" + (m.land || "Around the resort");
-      if(!groups[key]){ groups[key] = []; order.push(key); }
-      groups[key].push(m);
-    });
-
-    order.forEach(function(key){
-      var parts = key.split("|");
-      var sec = document.createElement("section");
-      sec.className = "group";
-      var h = document.createElement("div");
-      h.className = "grouphead";
-      h.innerHTML = '<span class="nm">' + esc(parts[1]) + '</span>' +
-                    '<span class="pk">' + esc(PARKS[parts[0]] || "") + '</span>';
-      sec.appendChild(h);
-      groups[key].forEach(function(m){
-        sec.appendChild(menuCard(m, !!have[menuKey(m)]));
+    if(searching()){
+      CATALOG.forEach(function(m){
+        if(m.park && !state.parks[m.park]) return;
+        if(state.meal && m.meal && m.meal !== state.meal) return;
+        if(!textMatches(m.dish + " " + m.venue + " " + (m.desc || ""))) return;
+        pushDish(m);
       });
-      host.appendChild(sec);
+      venues.forEach(function(v){
+        if(!state.parks[v.park]) return;
+        if(!textMatches(v.name + " " + (v.cuisine || ""))) return;
+        out.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+                   owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
+      });
+      // photographed, seasonal things first - they are the ones worth looking at
+      out.sort(function(a, b){
+        var as = a.hit === "dish" && a.m.seasonal ? 0 : a.hit === "dish" ? 1 : 2;
+        var bs = b.hit === "dish" && b.m.seasonal ? 0 : b.hit === "dish" ? 1 : 2;
+        return as - bs;
+      });
+    }else{
+      CATALOG.forEach(function(m){
+        if(!m.seasonal) return;
+        if(m.park && !state.parks[m.park]) return;
+        pushDish(m);
+      });
+    }
+
+    if(state.here){
+      out.sort(function(a, b){
+        var da = a.lat === null ? Infinity : metresBetween(state.here, a);
+        var db = b.lat === null ? Infinity : metresBetween(state.here, b);
+        return da - db;
+      });
+    }
+    return out.slice(0, 250);
+  }
+
+  function drawExploreCards(host, list){
+    host.innerHTML = "";
+    if(!list.length){
+      var e = document.createElement("p");
+      e.className = "empty";
+      e.textContent = searching()
+        ? "Nothing matches that. Try a dish or a restaurant name."
+        : "No seasonal items loaded yet.";
+      host.appendChild(e);
+      return;
+    }
+    var groups = [
+      ["Seasonal", list.filter(function(r){ return r.hit === "dish" && r.m.seasonal; })],
+      ["On the menu", list.filter(function(r){ return r.hit === "dish" && !r.m.seasonal; })],
+      ["Places", list.filter(function(r){ return r.hit === "venue"; })]
+    ];
+    groups.forEach(function(g){
+      if(!g[1].length) return;
+      var sec = section(host, g[0], g[1].length);
+      g[1].forEach(function(r){
+        sec.appendChild(r.hit === "dish" ? menuCard(r.m, r.owned) : venueCard(r.v, r.owned));
+      });
     });
   }
 
@@ -1709,12 +1821,21 @@
     document.getElementById("map").style.cursor = "";
   }
 
-  function setView(v){
+  function setMode(m){
+    state.mode = m;
+    document.body.setAttribute("data-mode", m);
+    document.querySelectorAll(".seg button[data-mode]").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.mode === m ? "true" : "false");
+    });
+    render();
+  }
+
+  function setShow(v){
     if(v !== "map") cancelPlacement();   // else a stray tap later moves a forgotten place
-    state.view = v;
-    document.body.setAttribute("data-view", v);
-    document.querySelectorAll(".seg button").forEach(function(b){
-      b.setAttribute("aria-pressed", b.dataset.view === v ? "true" : "false");
+    state.show = v;
+    document.body.setAttribute("data-show", v);
+    document.querySelectorAll(".seg button[data-show]").forEach(function(b){
+      b.setAttribute("aria-pressed", b.dataset.show === v ? "true" : "false");
     });
     // Leaflet measures 0x0 while the container is display:none, so it has to be
     // told to re-measure once the map is actually on screen again.
@@ -1722,6 +1843,9 @@
     if(fabLabel) fabLabel.textContent = v === "map" ? "Drop pin" : "Add";
     render();
   }
+
+  // Kept so older call sites (focus, placement) still read naturally.
+  function setView(v){ setShow(v === "map" ? "map" : "cards"); }
 
   function focus(p){
     if(!hasCoords(p)) return;
@@ -1734,13 +1858,27 @@
   }
 
   function render(){
-    var shown = places.filter(visible);
     drawFocus();
+    var host = document.getElementById("list");
+
+    if(state.mode === "explore"){
+      var hits = exploreList();
+      drawMarkers(hits.filter(hasCoords));
+      if(state.show === "cards") drawExploreCards(host, hits); else host.innerHTML = "";
+      document.getElementById("count").textContent =
+        hits.length + (hits.length === 1 ? " result" : " results");
+      return;
+    }
+
+    var shown = places.filter(visible);
     drawMarkers(shown);
-    if(state.view === "explore") drawExplore();
-    else if(state.view === "time") drawTimeline(shown);
-    else if(state.view === "tried") drawTried(shown);
-    else drawList(shown);
+    if(state.show === "cards"){
+      if(state.group === "day") drawTimeline(shown);
+      else if(state.group === "tried") drawTried(shown);
+      else drawList(shown);
+    }else{
+      host.innerHTML = "";
+    }
     var must = shown.filter(function(p){ return p.must; }).length;
     document.getElementById("count").textContent =
       shown.length + (shown.length === 1 ? " place" : " places") + (must ? " · " + must + " must do" : "");
@@ -1943,8 +2081,19 @@
     if(state.moving) moveBtn.click(); else cancelPlacement();
   });
 
-  document.querySelectorAll(".seg button").forEach(function(b){
-    b.addEventListener("click", function(){ setView(b.dataset.view); });
+  document.querySelectorAll(".seg button[data-mode]").forEach(function(b){
+    b.addEventListener("click", function(){ setMode(b.dataset.mode); });
+  });
+  document.querySelectorAll(".seg button[data-show]").forEach(function(b){
+    b.addEventListener("click", function(){ setShow(b.dataset.show); });
+  });
+  document.getElementById("groupBy").addEventListener("change", function(){
+    state.group = document.getElementById("groupBy").value;
+    render();
+  });
+  document.getElementById("mealPick").addEventListener("change", function(){
+    state.meal = document.getElementById("mealPick").value;
+    render();
   });
 
   document.querySelectorAll(".chip").forEach(function(c){
@@ -1956,15 +2105,25 @@
       }
       else if(c.hasAttribute("data-must")) state.mustOnly = !on;
       else if(c.dataset.park) state.parks[c.dataset.park] = !on;
-      else if(c.dataset.meal) state.meals[c.dataset.meal] = !on;
       if(c.dataset.park) recenter();   // meal/must filters must not yank the map
       render();
     });
   });
 
-  document.getElementById("search").addEventListener("input", function(e){
+  var searchEl = document.getElementById("search");
+  searchEl.addEventListener("input", function(e){
     state.query = e.target.value.trim().toLowerCase();
+    state.terms = null;            // a typed query replaces the chicken search
     render();
+  });
+
+  document.getElementById("chickBtn").addEventListener("click", function(){
+    state.terms = ["chicken strip", "chicken tender", "chicken finger"];
+    state.query = "";
+    searchEl.value = "chicken strips";
+    setMode("explore");
+    var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    document.querySelector(".searchbox").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block:"start" });
   });
 
   var addBtn = document.getElementById("addBtn");
@@ -1980,7 +2139,7 @@
   addBtn.addEventListener("click", function(){
     // On the map the useful gesture is "something is here"; elsewhere it is
     // "add this place", which needs no coordinates at all.
-    if(state.view === "map") armNewPin(); else openDialog(null);
+    if(state.show === "map" && state.mode === "mine") armNewPin(); else openDialog(null);
   });
 
   function armNewPin(){
@@ -2393,7 +2552,8 @@
     });
   }
 
-  setView("list");
+  setMode("mine");
+  setShow("cards");
   renderOsm();
   initCloud();
 })();

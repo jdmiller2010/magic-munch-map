@@ -80,6 +80,12 @@ Leaflet fills with `evenodd`, so passing `[outer].concat(rings)` to `L.polygon` 
 
 ### Catalogs, and the shape of the app
 
+**Two concepts, two presentations, and they are independent.** `state.mode` is *what* you are looking at (`mine` | `explore`); `state.show` is *how* (`cards` | `map`). That crossing is deliberate — "my list on a map" and "search results as a list" are both things people want, and the old five-tab control could express neither. `state.group` (`area` | `day` | `tried`) arranges the list and only applies to `mine`.
+
+Filters were cut from twelve chips to five (three parks, Near me, Must do) plus two selects (group, meal). Meal became a select because it only matters when planning; Near me is a *sort*, not a filter, and reorders `mine` into one distance-ordered list.
+
+**`hit` is the explore-result discriminator, never `kind`** — saved places already use `kind` for the OSM amenity type, and reusing it routed saved restaurants into the explore popup renderer.
+
 **The to-do list is the product.** Everything else is a way to get things onto it. Three catalogs feed it, and all three follow the same rule: **a source, never content**. Nothing reaches `places` until the user taps add.
 
 | Catalog | From | Carries |
