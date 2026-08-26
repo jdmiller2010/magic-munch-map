@@ -1,11 +1,10 @@
 # Magic Munch Map
 
-A one-page static site for planning what to eat and ride at Disneyland and California Adventure. OpenStreetMap base layer, no build step, no backend.
+A one-page static site for planning what to eat at Disneyland and California Adventure. Food only — no rides, shows, or shops. OpenStreetMap base layer, no build step, no backend.
 
 ## Files
 
-- `index.html` — the whole app, including the logo (inline SVG in the app bar)
-- `places.js` — the data. This is the only file you need to touch day to day.
+- `index.html` — the whole app, including the logo (inline SVG in the app bar). There is no seed data file; the list starts empty and lives in Firestore or your browser.
 - `firebase-config.js` — optional cloud sync config. Null by default; the app works without it.
 - `firestore.rules` — the security rules to paste into the Firebase console.
 - `README.md` — this
@@ -20,7 +19,7 @@ Open `index.html` in a browser. That's it. Tiles load from OpenStreetMap over th
 
 Any static host works. Two easy options:
 
-**GitHub Pages** — Settings → Pages → Source: **Deploy from a branch**, `main`, `/ (root)`. GitHub then republishes the repo root on every push to `main`. There is no build step, so no workflow is involved. Live at **https://mmm.molendino.com** a minute or so after each push. Editing `places.js` in the GitHub web editor counts as a push, which means you can add a restaurant from your phone and have it live before you reach the front of the line.
+**GitHub Pages** — Settings → Pages → Source: **Deploy from a branch**, `main`, `/ (root)`. GitHub then republishes the repo root on every push to `main`. There is no build step, so no workflow is involved. Live at **https://mmm.molendino.com** a minute or so after each push. Adding a restaurant from your phone goes through the app and Firestore, not through a deploy.
 
 **Netlify** — drag the folder onto app.netlify.com. Instant URL, custom domain if you want one.
 
@@ -37,16 +36,13 @@ Worth knowing: `localStorage` is scoped per origin, so browser-only edits saved 
 
 ## Adding places
 
-Two ways, and they meet in the middle:
+Tap **Add pin**, tap the map, fill in the form. Turn on **Move pins** and drag anything that landed in the wrong spot. Tap the star on any card to flag it as a must do.
 
-1. **In the browser.** Tap "Add a pin", tap the map, fill in the form. Turn on "Move pins" and drag anything that's in the wrong spot. Tap the star on any card to flag it as a must do.
-2. **In the file.** Edit `places.js` directly. The format is one object per line.
-
-Browser edits save to that browser only — they won't show up on the other person's phone. When you're happy with them, hit **Copy data file** and paste the result over the contents of `places.js`, then redeploy. Now it's shared.
+Signed in, every edit goes straight to the shared list and shows up on the other phone. Signed out, edits save to that browser only — **Copy backup** puts the whole list on your clipboard as JSON if you want a snapshot for safekeeping.
 
 ## Cloud sync (optional)
 
-Without it, the app is browser-local: `places.js` is the shared copy and every browser keeps its own edits. Turn sync on and both phones read and write one live list instead, with no copy-paste step.
+Without it, the app is browser-local: every browser keeps its own list and nothing is shared. Turn sync on and both phones read and write one live list instead, with no copy-paste step.
 
 Setup is about ten minutes in the Firebase console, all of it listed in the comments at the top of `firebase-config.js`. The short version:
 
@@ -56,7 +52,7 @@ Setup is about ten minutes in the Firebase console, all of it listed in the comm
 4. Authentication → Settings → Authorized domains → add **mmm.molendino.com**. Sign-in fails silently on the live site without this.
 5. Firestore → Rules → paste `firestore.rules`, with the email addresses that should have access.
 
-Then push. Sign in from the Manage section; the first device to sign in gets an **Upload local list** button that seeds the shared list from `places.js`.
+Then push. Sign in from the Manage section; the first device to sign in gets an **Upload local list** button that seeds the shared list from the shared list.
 
 The `apiKey` in `firebase-config.js` is not a secret — it names the project, it doesn't grant anything. Access is controlled entirely by the rules, which is why the allowlist in `firestore.rules` is the part worth getting right.
 
@@ -64,7 +60,7 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 
 - **Signed in**, Firestore owns the list. Each edit writes one document, so two people editing different pins merge cleanly instead of overwriting each other's work.
 - **Offline**, edits are cached locally and sync when signal returns — which matters, because the parks are a dead zone. The status dot turns gold while offline.
-- **Signed out**, nothing changes from before: `places.js` plus this browser's `localStorage`.
+- **Signed out**, nothing changes from before: the shared list plus this browser's `localStorage`.
 - Signing in does **not** touch `localStorage`, so signing out returns you to whatever you had before, untouched.
 
 ## Fields
@@ -74,14 +70,13 @@ The `apiKey` in `firebase-config.js` is not a secret — it names the project, i
 | `name` | Anything |
 | `park` | `dl` or `dca` |
 | `land` | Free text. Groups the list. |
-| `type` | `food`, `ride`, `show`, `shop` |
 | `lat` / `lng` | Decimal degrees |
 | `must` | `true` or `false`. Shows a gold Must do tag. |
 | `note` | Free text |
+| `ord` | Number. Controls the order groups appear in. |
 
 ## Known rough edges
 
-- **Pin positions are approximate.** They're placed from general knowledge of the park layout, not surveyed. Expect some to be off by a building or two. The "Move pins" mode exists for exactly this — fix them once and copy the data file back.
 - Some venues rotate names and menus. Verify anything you're building a reservation around.
 - The map is deliberately bounded to the resort so you can't pan off to sea.
 

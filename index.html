@@ -28,9 +28,6 @@
     --logo-a:#37c3d8;
     --logo-b:#0e8fa8;
     --food:#c64f29;
-    --ride:#358352;
-    --show:#7458e0;
-    --shop:#996c2b;
     --shadow:0 1px 2px rgba(74,54,24,.07),0 6px 20px rgba(74,54,24,.09);
     --shadow-lg:0 10px 34px rgba(74,54,24,.18);
     --r-lg:26px; --r-md:18px; --r-sm:13px;
@@ -44,7 +41,7 @@
       --muted:#9ba7b7; --line:#2f3a49; --brand:#3fcde2; --brand-soft:#0d3742; --on-brand:#06272f;
       --gold:#ffc247; --gold-soft:#3d3111;
       --logo-a:#6fe3f2; --logo-b:#2ab4cd;
-      --food:#ff8460; --ride:#5ecb85; --show:#a893ff; --shop:#dda65a;
+      --food:#ff8460;
       --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 20px rgba(0,0,0,.35);
       --shadow-lg:0 8px 34px rgba(0,0,0,.5);
     }
@@ -119,16 +116,8 @@
   }
   .chip:active{transform:scale(.96)}
   .chip .dot{width:8px;height:8px;border-radius:50%;flex:none}
-  .chip[data-type="food"] .dot{background:var(--food)}
-  .chip[data-type="ride"] .dot{background:var(--ride)}
-  .chip[data-type="show"] .dot{background:var(--show)}
-  .chip[data-type="shop"] .dot{background:var(--shop)}
   .chip[aria-pressed="true"]{color:var(--surface);border-color:transparent}
   .chip[aria-pressed="true"] .dot{background:currentColor;opacity:.85}
-  .chip[data-type="food"][aria-pressed="true"]{background:var(--food)}
-  .chip[data-type="ride"][aria-pressed="true"]{background:var(--ride)}
-  .chip[data-type="show"][aria-pressed="true"]{background:var(--show)}
-  .chip[data-type="shop"][aria-pressed="true"]{background:var(--shop)}
   .chip[data-must][aria-pressed="true"]{background:var(--gold);color:#2a2000;border-color:transparent}
 
   .searchbox{padding:10px 16px 0;position:relative}
@@ -214,7 +203,7 @@
   .sync .msg{font-size:13px;color:var(--muted);margin:9px 0 0;max-width:58ch}
   .sync .msg:empty{display:none}
   .dotstat{width:9px;height:9px;border-radius:50%;flex:none;background:var(--muted)}
-  .dotstat.ok{background:var(--ride)}
+  .dotstat.ok{background:#358352}
   .dotstat.warn{background:var(--gold)}
 
   /* fab */
@@ -315,7 +304,7 @@
         </span>
         <div class="brandtext">
           <h1>Magic <span class="mm">Munch</span> Map</h1>
-          <div class="sub">Where we eat, what we ride</div>
+          <div class="sub">Everything worth eating</div>
         </div>
       </div>
       <span class="count" id="count">0 places</span>
@@ -332,10 +321,6 @@
   <div class="mapwrap"><div id="map"></div></div>
 
   <div class="chips">
-    <button type="button" class="chip" data-type="food" aria-pressed="true"><span class="dot"></span>Food</button>
-    <button type="button" class="chip" data-type="ride" aria-pressed="true"><span class="dot"></span>Rides</button>
-    <button type="button" class="chip" data-type="show" aria-pressed="true"><span class="dot"></span>Shows</button>
-    <button type="button" class="chip" data-type="shop" aria-pressed="true"><span class="dot"></span>Shops</button>
     <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
   </div>
 
@@ -362,9 +347,9 @@
     </div>
 
     <button type="button" class="btn" id="moveBtn" aria-pressed="false">Move pins</button>
-    <button type="button" class="btn solid" id="copyBtn">Copy data file</button>
+    <button type="button" class="btn solid" id="copyBtn">Copy backup</button>
     <button type="button" class="btn" id="resetBtn">Reset</button>
-    <p class="hint" id="hint">Changes save to this browser only. To share them, tap <strong>Copy data file</strong> and paste the result into <code>places.js</code>.</p>
+    <p class="hint" id="hint">Changes save to this browser only. Sign in above to share one live list across devices.</p>
   </div>
 
   <footer class="wrap">
@@ -389,15 +374,6 @@
       <input id="fName" type="text" autocomplete="off" placeholder="Blue Bayou">
     </div>
     <div class="field">
-      <label for="fType">Type</label>
-      <select id="fType">
-        <option value="food">Food</option>
-        <option value="ride">Ride</option>
-        <option value="show">Show</option>
-        <option value="shop">Shop</option>
-      </select>
-    </div>
-    <div class="field">
       <label for="fLand">Land or area</label>
       <input id="fLand" type="text" autocomplete="off" placeholder="Frontierland">
     </div>
@@ -417,46 +393,33 @@
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/12.18.0/firebase-firestore-compat.js"></script>
 <script src="firebase-config.js"></script>
-<script src="places.js"></script>
 <script>
 (function(){
   var KEY = "magicMunchMap.v1";
   var LEGACY_KEY = "parkFoodMap.v1";
-  // Leaflet injects markers outside the themed tree, so these mirror the
-  // --food/--ride/--show/--shop tokens by hand. Keep them in step.
-  var COLORS = { food:"#c64f29", ride:"#358352", show:"#7458e0", shop:"#996c2b" };
-  var KINDS  = { food:"Food", ride:"Ride", show:"Show", shop:"Shop" };
+  // Leaflet injects markers outside the themed tree, so this mirrors the
+  // --food token by hand. Keep them in step.
+  var FOOD = "#c64f29";
   var PARKS  = { dl:"Disneyland", dca:"California Adventure" };
   var CENTER = { all:[33.8093,-117.9190], dl:[33.8125,-117.9190], dca:[33.8060,-117.9180] };
   var ZOOM   = { all:16, dl:17, dca:17 };
-  var GLYPH = {
-    food:'<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>',
-    ride:'<path d="M12 3l2.6 5.6L20 9.4l-4 4 1 6-5-2.8L7 19.4l1-6-4-4 5.4-.8z"/>',
-    show:'<path d="M4 6h16v9H4zM8 20h8M12 15v5"/>',
-    shop:'<path d="M4 8h16l-1.2 11.2a2 2 0 01-2 1.8H7.2a2 2 0 01-2-1.8zM9 8V6a3 3 0 016 0v2"/>'
-  };
+  var GLYPH = '<path d="M4 3v8a3 3 0 003 3v7M7 3v6M10 3v6M17 3c-1.5 0-2.5 3-2.5 6s1 4 2.5 4v8"/>';
 
-  var state = { park:"all", types:{food:true,ride:true,show:true,shop:true}, mustOnly:false, query:"", adding:false, moving:false };
+  var state = { park:"all", mustOnly:false, query:"", adding:false, moving:false };
   var places = load();
   var markers = {};
   var pending = null;
   var editingId = null;
 
   function load(){
-    var seed = (window.PLACES || []).map(function(p,i){
-      var c = Object.assign({}, p);
-      if(!c.id) c.id = "seed-" + i;
-      if(typeof c.ord !== "number") c.ord = i;
-      return c;
-    });
     try{
       var raw = localStorage.getItem(KEY) || localStorage.getItem(LEGACY_KEY);
       if(raw){
         var saved = JSON.parse(raw);
-        if(Array.isArray(saved) && saved.length) return saved;
+        if(Array.isArray(saved)) return saved;
       }
     }catch(e){}
-    return seed;
+    return [];
   }
   function save(){ try{ localStorage.setItem(KEY, JSON.stringify(places)); }catch(e){} }
 
@@ -475,7 +438,7 @@
   function icon(p){
     return L.divIcon({
       className:"",
-      html:'<div class="pin'+(p.must?" must":"")+'" style="background:'+COLORS[p.type]+'"><i></i></div>',
+      html:'<div class="pin'+(p.must?" must":"")+'" style="background:'+FOOD+'"><i></i></div>',
       iconSize:[26,26], iconAnchor:[13,26], popupAnchor:[0,-22]
     });
   }
@@ -487,7 +450,7 @@
   }
 
   function popupHtml(p){
-    var bits = [KINDS[p.type], PARKS[p.park], p.land].filter(Boolean).join(" · ");
+    var bits = [PARKS[p.park], p.land].filter(Boolean).join(" · ");
     return '<div class="pop"><b>'+esc(p.name)+'</b><div class="m">'+esc(bits)+'</div>'+
            (p.note?'<div class="n">'+esc(p.note)+'</div>':'')+
            (p.must?'<div class="g">Must do</div>':'')+'</div>';
@@ -495,7 +458,6 @@
 
   function visible(p){
     if(state.park !== "all" && p.park !== state.park) return false;
-    if(!state.types[p.type]) return false;
     if(state.mustOnly && !p.must) return false;
     if(state.query){
       var hay = (p.name+" "+(p.land||"")+" "+(p.note||"")).toLowerCase();
@@ -528,7 +490,7 @@
     if(!shown.length){
       var empty = document.createElement("p");
       empty.className = "empty";
-      empty.textContent = "Nothing matches yet. Clear the search or switch a category back on.";
+      empty.textContent = "Nothing here yet. Tap Add pin to drop your first one.";
       host.appendChild(empty);
       return;
     }
@@ -559,8 +521,8 @@
 
     var sw = document.createElement("div");
     sw.className = "swatch";
-    sw.style.background = COLORS[p.type];
-    sw.innerHTML = svg(GLYPH[p.type] || GLYPH.food, 2);
+    sw.style.background = FOOD;
+    sw.innerHTML = svg(GLYPH, 2);
     el.appendChild(sw);
 
     var body = document.createElement("div");
@@ -573,19 +535,15 @@
     name.addEventListener("click", function(){ focus(p); });
     body.appendChild(name);
 
-    var meta = document.createElement("div");
-    meta.className = "meta";
-    var t1 = document.createElement("span");
-    t1.className = "tag";
-    t1.textContent = KINDS[p.type] || "";
-    meta.appendChild(t1);
     if(p.must){
+      var meta = document.createElement("div");
+      meta.className = "meta";
       var t2 = document.createElement("span");
       t2.className = "tag gold";
       t2.textContent = "Must do";
       meta.appendChild(t2);
+      body.appendChild(meta);
     }
-    body.appendChild(meta);
 
     if(p.note){
       var n = document.createElement("p");
@@ -656,7 +614,6 @@
     editingId = p ? p.id : null;
     document.getElementById("dlgTitle").textContent = p ? "Edit pin" : "Add a pin";
     document.getElementById("fName").value = p ? p.name : "";
-    document.getElementById("fType").value = p ? p.type : "food";
     document.getElementById("fLand").value = p ? (p.land||"") : "";
     document.getElementById("fNote").value = p ? (p.note||"") : "";
     err.style.display = "none";
@@ -677,7 +634,6 @@
     }
     var data = {
       name: name,
-      type: document.getElementById("fType").value,
       land: document.getElementById("fLand").value.trim() || "Unsorted",
       note: document.getElementById("fNote").value.trim()
     };
@@ -715,8 +671,7 @@
     c.addEventListener("click", function(){
       var on = c.getAttribute("aria-pressed") === "true";
       c.setAttribute("aria-pressed", on ? "false" : "true");
-      if(c.hasAttribute("data-must")) state.mustOnly = !on;
-      else state.types[c.dataset.type] = !on;
+      state.mustOnly = !on;
       render();
     });
   });
@@ -770,20 +725,14 @@
   });
 
   document.getElementById("copyBtn").addEventListener("click", function(){
-    var body = places.map(function(p){
-      return "  { name: " + JSON.stringify(p.name) +
-             ", park: " + JSON.stringify(p.park) +
-             ", land: " + JSON.stringify(p.land || "") +
-             ", type: " + JSON.stringify(p.type) +
-             ", lat: " + p.lat + ", lng: " + p.lng +
-             ", must: " + (p.must ? "true" : "false") +
-             ", note: " + JSON.stringify(p.note || "") + " }";
-    }).join(",\n");
-    var text = "window.PLACES = [\n" + body + "\n];\n";
+    var text = JSON.stringify(places.map(function(p){
+      return { name:p.name, park:p.park, land:p.land || "", lat:p.lat, lng:p.lng,
+               must: !!p.must, note:p.note || "" };
+    }), null, 2);
     var btn = this;
     function done(ok){
       btn.textContent = ok ? "Copied" : "Copy failed";
-      setTimeout(function(){ btn.textContent = "Copy data file"; }, 1800);
+      setTimeout(function(){ btn.textContent = "Copy backup"; }, 1800);
     }
     if(navigator.clipboard && navigator.clipboard.writeText){
       navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ fallback(text, done); });
@@ -801,7 +750,7 @@
   }
 
   document.getElementById("resetBtn").addEventListener("click", function(){
-    if(!confirm("Discard everything saved in this browser and reload from places.js?")) return;
+    if(!confirm("Discard everything saved in this browser?")) return;
     try{ localStorage.removeItem(KEY); localStorage.removeItem(LEGACY_KEY); }catch(e){}
     places = load();
     render();
@@ -809,13 +758,13 @@
 
   /* ---------- cloud sync (optional) ----------
      Unconfigured or signed out, none of this runs and the app reads
-     places.js + localStorage exactly as before. Signed in, Firestore
+     localStorage only. Signed in, Firestore
      becomes the store: onSnapshot owns `places` and every mutation
      writes one document, so two phones editing different pins merge
      instead of clobbering each other. */
 
   var cloud = { on:false, db:null, user:null, unsub:null, empty:false, cache:false, err:"" };
-  var FIELDS = ["name","park","land","type","lat","lng","must","note","ord"];
+  var FIELDS = ["name","park","land","lat","lng","must","note","ord"];
 
   var syncDot   = document.getElementById("syncDot");
   var syncWho   = document.getElementById("syncWho");
