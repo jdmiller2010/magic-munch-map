@@ -86,6 +86,8 @@ Filters were cut from twelve chips to five (three parks, Near me, Must do) plus 
 
 **`hit` is the explore-result discriminator, never `kind`** — saved places already use `kind` for the OSM amenity type, and reusing it routed saved restaurants into the explore popup renderer.
 
+**My list shows only my list.** Discovery lives in Explore and nowhere else. An earlier design leaked catalog matches into the list as ghost cards, which was wrong twice over: they were not on the list, and they bypassed `visible()`, so Must do appeared broken because the ghosts ignored it.
+
 **The to-do list is the product.** Everything else is a way to get things onto it. Three catalogs feed it, and all three follow the same rule: **a source, never content**. Nothing reaches `places` until the user taps add.
 
 | Catalog | From | Carries |

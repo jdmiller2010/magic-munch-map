@@ -107,9 +107,31 @@
   .seg button{white-space:nowrap}
   .controls{display:flex;gap:8px;align-items:stretch;margin-bottom:10px}
   .controls .seg{flex:1;margin-bottom:0;overflow:visible}
-  .controls .seg.tog{flex:none;width:88px}
-  .seg.tog button{padding:7px 0;display:flex;align-items:center;justify-content:center}
-  .seg.tog svg{width:18px;height:18px}
+  .showtog{display:none}
+
+  /* Search and filters sit above the map so they are the top of the screen in
+     either view, and stay put while the list scrolls under them. */
+  .stickybar{
+    position:sticky;top:0;z-index:640;background:var(--bg);
+    border-bottom:1px solid var(--line);padding-bottom:10px
+  }
+  .stickybar .searchbox{padding-top:10px}
+  .stickybar .chips{padding-bottom:0}
+
+  /* Google-Maps style: one pill, bottom centre, naming where you are going. */
+  .viewpill{
+    position:fixed;left:50%;transform:translateX(-50%);
+    bottom:calc(18px + var(--safe-b));z-index:700;
+    appearance:none;cursor:pointer;border:0;border-radius:999px;
+    background:var(--ink);color:var(--bg);box-shadow:var(--shadow-lg);
+    font-family:"Fredoka",sans-serif;font-weight:600;font-size:14px;
+    padding:11px 18px;display:flex;align-items:center;gap:8px;
+    transition:transform .2s var(--spring)
+  }
+  .viewpill:active{transform:translateX(-50%) scale(.94)}
+  .viewpill svg{width:17px;height:17px}
+  body[data-show="cards"] .viewpill .ic-list,
+  body[data-show="map"] .viewpill .ic-map{display:none}
 
   .arrange{display:flex;gap:8px;padding:10px 16px 0}
   .arrange select{
@@ -117,11 +139,23 @@
     padding:9px 10px;border:1px solid var(--line);border-radius:var(--r-sm);
     background:var(--surface);color:var(--ink);box-shadow:var(--shadow)
   }
-  body[data-mode="explore"] .arrange{display:none}
+  body[data-mode="explore"] #arrange,
+  body[data-mode="mine"] #scopeRow,
+  body[data-mode="explore"] .chip[data-must]{display:none}
   body[data-show="cards"] .mapwrap{display:none}
   body[data-show="map"] .list,
+  body[data-show="map"] footer,
   body[data-show="map"] .arrange{display:none}
-  body[data-show="map"] #map{height:68vh}
+  /* The map takes the rest of the screen, which puts its bottom-right corner
+     and the viewport's in the same place - that is where Drop pin lives. */
+  body[data-show="map"] .mapwrap{padding:0}
+  body[data-show="map"] #map{
+    height:calc(100vh - 178px);min-height:320px;border-radius:0;border-left:0;border-right:0
+  }
+  @supports (height: 100dvh){
+    body[data-show="map"] #map{height:calc(100dvh - 178px)}
+  }
+  body[data-show="map"]{padding-bottom:0}
   .seg button{
     flex:1;appearance:none;border:0;background:transparent;color:var(--muted);cursor:pointer;
     font-size:13px;font-weight:600;padding:8px 4px;border-radius:9px;transition:background .18s,color .18s
@@ -335,7 +369,7 @@
   .chick{
     position:fixed;left:16px;bottom:calc(16px + var(--safe-b));z-index:700;
     appearance:none;cursor:pointer;border:0;border-radius:999px;width:56px;height:56px;
-    background:var(--gold);box-shadow:var(--shadow-lg);padding:0;
+    background:var(--brand);box-shadow:var(--shadow-lg);padding:0;
     display:flex;align-items:center;justify-content:center;
     transition:transform .2s var(--spring)
   }
@@ -343,11 +377,15 @@
   .chick:active{transform:scale(.9)}
   /* One dip every seven seconds or so - present, not fidgety. Long enough that
      you are not sure you saw it, short enough that it happens again while you
-     are still looking. Same idea as the blink in the logo. */
-  .chick .head{transform-box:fill-box;transform-origin:78% 92%;animation:peck 7s ease-in-out infinite}
+     are still looking. Same idea as the blink in the logo.
+
+     The pivot is the base of the neck, and the rotation is negative so the
+     beak swings down and to the left - clear of the body, all the way to the
+     ground, rather than into its own chest. */
+  .chick .head{transform-box:fill-box;transform-origin:90% 103%;animation:peck 7s ease-in-out infinite}
   @keyframes peck{
-    0%,91%,100%{transform:rotate(0) translateY(0)}
-    95%{transform:rotate(24deg) translateY(3px)}
+    0%,90%,100%{transform:translateY(0) rotate(0)}
+    95%{transform:translateY(3px) rotate(-58deg)}
   }
 
   .fab{animation:bob 3.6s ease-in-out infinite}
@@ -513,27 +551,15 @@
         <button type="button" data-mode="mine" aria-pressed="true">My list</button>
         <button type="button" data-mode="explore" aria-pressed="false">Explore</button>
       </div>
-      <div class="seg tog" role="group" aria-label="Show as">
-        <button type="button" data-show="cards" aria-pressed="true" aria-label="Show as a list">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
-        </button>
-        <button type="button" data-show="map" aria-pressed="false" aria-label="Show on the map">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M9 3L3 5.5v15L9 18l6 3 6-2.5v-15L15 6z"/><path d="M9 3v15M15 6v15"/></svg>
-        </button>
-      </div>
     </div>
   </div>
 </div>
 
-<main>
-  <div class="mapwrap">
-    <div class="placebar" id="placebar" hidden>
-      <span id="placeMsg"></span>
-      <button type="button" class="btn" id="placeCancel">Cancel</button>
-    </div>
-    <div id="map"></div>
+<div class="stickybar">
+  <div class="searchbox">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+    <input id="search" type="search" placeholder="Search dishes and places, or a, b, c for any" aria-label="Search">
   </div>
-
   <div class="chips">
     <button type="button" class="chip" data-park="dl" aria-pressed="true">Disneyland</button>
     <button type="button" class="chip" data-park="dca" aria-pressed="true">Calif. Adventure</button>
@@ -541,7 +567,12 @@
     <button type="button" class="chip sep" data-near aria-pressed="false">Near me</button>
     <button type="button" class="chip" data-must aria-pressed="false">Must do</button>
   </div>
-
+  <div class="arrange" id="scopeRow">
+    <select id="scopePick" aria-label="What to explore">
+      <option value="seasonal">Seasonal menu</option>
+      <option value="all">Every dish and place</option>
+    </select>
+  </div>
   <div class="arrange" id="arrange">
     <select id="groupBy" aria-label="Group by">
       <option value="area">By area</option>
@@ -559,11 +590,20 @@
       <option value="none">Unplanned</option>
     </select>
   </div>
+</div>
 
-  <div class="searchbox">
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-    <input id="search" type="search" placeholder="Search dishes and places, or a, b, c for any" aria-label="Search">
+<main>
+  <div class="mapwrap">
+    <div class="placebar" id="placebar" hidden>
+      <span id="placeMsg"></span>
+      <button type="button" class="btn" id="placeCancel">Cancel</button>
+    </div>
+    <div id="map"></div>
   </div>
+
+
+
+
 
   <div class="list" id="list"></div>
 
@@ -574,32 +614,38 @@
   </footer>
 </main>
 
+<div class="showtog" role="group" aria-label="Show as" hidden>
+  <button type="button" data-show="cards" aria-pressed="true"></button>
+  <button type="button" data-show="map" aria-pressed="false"></button>
+</div>
+
+<button type="button" class="viewpill" id="viewPill" aria-label="Switch between the list and the map">
+  <svg class="ic-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linejoin="round"><path d="M9 3L3 5.5v15L9 18l6 3 6-2.5v-15L15 6z"/><path d="M9 3v15M15 6v15"/></svg>
+  <svg class="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3.5 6h.01M3.5 12h.01M3.5 18h.01"/></svg>
+  <span class="lbl"></span>
+</button>
+
 <button type="button" class="chick" id="chickBtn" aria-label="Find everything chicken">
   <svg viewBox="0 0 32 32" fill="none" aria-hidden="true">
-    <!-- sweeping tail -->
-    <path d="M20 20c4.5.6 7.4-2.2 8.2-6.6-1.9 2.6-3.9 3.4-5.6 3.2z" fill="#5e2019"/>
-    <path d="M19.5 21.8c5 1 8.4-1.6 9.4-6.4-2.2 3-4.7 3.9-6.7 3.7z" fill="#8f3327"/>
-    <path d="M19 23.4c4.6 1.5 8-.6 9.6-4.8-2.4 2.4-4.9 2.8-6.8 2.4z" fill="#c9542f"/>
-    <!-- legs, kept inside the circle -->
+    <path d="M20.5 19.5c4.6.4 7.6-2.6 8.3-7.2-2 2.8-4.1 3.7-5.9 3.5z" fill="#8f3327"/>
+    <path d="M20 21.4c5.2.8 8.6-2 9.5-7-2.3 3.2-5 4.2-7 4z" fill="#c9542f"/>
+    <path d="M19.5 23.2c4.8 1.3 8.2-1 9.8-5.4-2.5 2.6-5.1 3.1-7.1 2.7z" fill="#f0a500"/>
     <g stroke="#f0a500" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M13 25.6v3.1M11.6 30.1L13 28.7l1.4 1.4M13 28.7v1.6"/>
-      <path d="M17 25.6v3.1M15.6 30.1L17 28.7l1.4 1.4M17 28.7v1.6"/>
+      <path d="M13.6 26v2.6M12.2 30l1.4-1.4 1.4 1.4M13.6 28.6v1.6"/>
+      <path d="M17.6 26v2.6M16.2 30l1.4-1.4 1.4 1.4M17.6 28.6v1.6"/>
     </g>
-    <!-- body -->
-    <ellipse cx="15.4" cy="19.6" rx="7.4" ry="6.6" fill="#8f3327"/>
-    <path d="M12.4 18.2c3-.7 5.4.8 6.1 3.3-2.3 1.7-5.2 1.5-7.1-.3z" fill="#c9542f"/>
+    <ellipse cx="16" cy="20.2" rx="7.6" ry="6.6" fill="#a8402f"/>
+    <ellipse cx="13.6" cy="20.6" rx="4" ry="3.2" fill="#e07a4a"/>
     <g class="head">
-      <!-- neck into head -->
-      <path d="M9.6 15.8c-.9-2 .1-4.4 2.2-5.3l3.4 5.4z" fill="#8f3327"/>
-      <circle cx="10.4" cy="9.6" r="4.4" fill="#8f3327"/>
-      <!-- comb -->
-      <path d="M7.6 5.4c.2-2.2 2.5-2.3 2.9-.4.7-2 3-1.6 2.9.5-.1 1.3-.8 2.2-1.7 2.6z" fill="#e0342b"/>
-      <!-- beak -->
-      <path d="M6.2 9.2L1.9 10.6l4.3 1.5z" fill="#ffc247"/>
-      <!-- wattle -->
-      <path d="M7.4 13.2c1.6.5 1.6 2.7-.4 2.7-1.7 0-2-2.2.4-2.7z" fill="#e0342b"/>
-      <circle cx="9.9" cy="8.6" r="1.9" fill="#fffdf8"/>
-      <circle cx="9.5" cy="8.6" r="1.05" fill="#1a1108"/>
+      <path d="M10.4 16.6c-1.2-2.2-.4-4.9 1.9-6l3.5 5.6z" fill="#a8402f"/>
+      <circle cx="10.8" cy="9.8" r="5" fill="#a8402f"/>
+      <path d="M7.6 4.9c.3-2.4 2.8-2.4 3.2-.3.8-2.2 3.3-1.7 3.1.6-.1 1.4-1 2.4-2 2.8z" fill="#e0342b"/>
+      <path d="M5.6 9.4L1.2 10.9l4.4 1.6z" fill="#ffc247"/>
+      <path d="M7.6 13.6c1.7.5 1.7 2.9-.4 2.9-1.8 0-2.1-2.4.4-2.9z" fill="#e0342b"/>
+      <circle cx="9.6" cy="8.9" r="2.2" fill="#fffdf8"/>
+      <circle cx="9.1" cy="9.2" r="1.25" fill="#1a1108"/>
+      <circle cx="8.7" cy="8.7" r=".45" fill="#fff"/>
+      <circle cx="13.6" cy="11.8" r="1.5" fill="#e07a4a" opacity=".7"/>
     </g>
   </svg>
 </button>
@@ -734,6 +780,7 @@
     show:"cards",        // cards | map
     group:"area",        // area | day | tried  (only meaningful for mine)
     parks:{ dl:true, dca:true, dtd:true },
+    scope:"seasonal",    // explore: seasonal | all
     meal:"",             // "" = any
     mustOnly:false, query:"", terms:null, moving:false,
     here:null            // {lat,lng} once geolocation has answered
@@ -1255,25 +1302,6 @@
     });
   }
 
-  function emptyMsg(){
-    return places.length
-      ? "No places match these filters. Try switching some chips back on."
-      : "Nothing here yet. Tap Add to start the list.";
-  }
-
-  // Searching covers the shared venue list too, so a place you have not saved
-  // yet is still findable - and one tap away from being on the list.
-  function venueHits(){
-    if(!state.query || state.query.length < 2) return [];
-    var have = {};
-    places.forEach(function(p){ have[String(p.name || "").toLowerCase()] = true; });
-    return venues.filter(function(v){
-      if(!state.parks[v.park]) return false;
-      if(have[v.name.toLowerCase()]) return false;
-      return (v.name + " " + (v.cuisine || "")).toLowerCase().indexOf(state.query) !== -1;
-    }).slice(0, 8);
-  }
-
   function addVenue(v){
     var p = {
       id: newId(), name: v.name, park: v.park, land: "Unsorted",
@@ -1287,47 +1315,10 @@
     render();
   }
 
-  function drawVenueHits(host){
-    var hits = venueHits();
-    if(!hits.length) return;
-    var sec = document.createElement("section");
-    sec.className = "group";
-    var h = document.createElement("div");
-    h.className = "dayhead";
-    h.innerHTML = '<span class="nm">Not on your list</span><span class="ct">' + hits.length + '</span>';
-    sec.appendChild(h);
-    hits.forEach(function(v){
-      var el = document.createElement("div");
-      el.className = "card ghost";
-      var sw = document.createElement("div");
-      sw.className = "swatch";
-      sw.style.background = FOOD;
-      sw.innerHTML = svg(GLYPH, 2);
-      el.appendChild(sw);
-      var body = document.createElement("div");
-      body.className = "body";
-      var nm = document.createElement("div");
-      nm.className = "name";
-      nm.textContent = v.name;
-      body.appendChild(nm);
-      var sub = document.createElement("p");
-      sub.className = "note";
-      sub.textContent = venueBlurb(v);
-      body.appendChild(sub);
-      el.appendChild(body);
-      var acts = document.createElement("div");
-      acts.className = "acts one";
-      var add = document.createElement("button");
-      add.type = "button";
-      add.className = "iconbtn";
-      add.setAttribute("aria-label", "Add " + v.name + " to the list");
-      add.innerHTML = svg('<path d="M12 5v14M5 12h14"/>', 2.2);
-      add.addEventListener("click", function(){ addVenue(v); });
-      acts.appendChild(add);
-      el.appendChild(acts);
-      sec.appendChild(el);
-    });
-    host.appendChild(sec);
+  function emptyMsg(){
+    return places.length
+      ? "No places match these filters. Try switching some chips back on."
+      : "Nothing here yet. Tap Add to start the list.";
   }
 
   function menuCard(m, have){
@@ -1473,14 +1464,17 @@
                  lat:c ? c.lat : null, lng:c ? c.lng : null });
     }
 
+    var all = state.scope === "all";
+
     if(searching()){
       CATALOG.forEach(function(m){
+        if(!all && !m.seasonal) return;
         if(m.park && !state.parks[m.park]) return;
         if(state.meal && m.meal && m.meal !== state.meal) return;
         if(!textMatches(m.dish + " " + m.venue + " " + (m.desc || ""))) return;
         pushDish(m);
       });
-      venues.forEach(function(v){
+      if(all) venues.forEach(function(v){
         if(!state.parks[v.park]) return;
         if(!textMatches(v.name + " " + (v.cuisine || ""))) return;
         out.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
@@ -1494,9 +1488,14 @@
       });
     }else{
       CATALOG.forEach(function(m){
-        if(!m.seasonal) return;
+        if(!all && !m.seasonal) return;
         if(m.park && !state.parks[m.park]) return;
         pushDish(m);
+      });
+      if(all) venues.forEach(function(v){
+        if(!state.parks[v.park]) return;
+        out.push({ hit:"venue", v:v, name:v.name, lat:v.lat, lng:v.lng,
+                   owned: places.some(function(p){ return norm(p.name) === norm(v.name); }) });
       });
     }
 
@@ -1544,7 +1543,6 @@
       empty.className = "empty";
       empty.textContent = emptyMsg();
       host.appendChild(empty);
-      drawVenueHits(host);
       return;
     }
 
@@ -1565,7 +1563,6 @@
         return da - db;
       }).forEach(function(p){ sec.appendChild(cardFor(p)); });
       host.appendChild(sec);
-      drawVenueHits(host);
       return;
     }
 
@@ -1587,7 +1584,6 @@
       groups[key].forEach(function(p){ g.appendChild(cardFor(p)); });
       host.appendChild(g);
     });
-    drawVenueHits(host);
   }
 
   function drawTimeline(shown){
@@ -1872,6 +1868,8 @@
     // told to re-measure once the map is actually on screen again.
     if(v === "map") setTimeout(function(){ map.invalidateSize(); }, 0);
     if(fabLabel) fabLabel.textContent = v === "map" ? "Drop pin" : "Add";
+    var pill = document.getElementById("viewPill");
+    if(pill) pill.querySelector(".lbl").textContent = v === "map" ? "List" : "Map";
     render();
   }
 
@@ -2118,12 +2116,21 @@
   document.querySelectorAll(".seg button[data-show]").forEach(function(b){
     b.addEventListener("click", function(){ setShow(b.dataset.show); });
   });
+
+  var viewPill = document.getElementById("viewPill");
+  viewPill.addEventListener("click", function(){
+    setShow(state.show === "map" ? "cards" : "map");
+  });
   document.getElementById("groupBy").addEventListener("change", function(){
     state.group = document.getElementById("groupBy").value;
     render();
   });
   document.getElementById("mealPick").addEventListener("change", function(){
     state.meal = document.getElementById("mealPick").value;
+    render();
+  });
+  document.getElementById("scopePick").addEventListener("change", function(){
+    state.scope = document.getElementById("scopePick").value;
     render();
   });
 
@@ -2150,6 +2157,8 @@
   document.getElementById("chickBtn").addEventListener("click", function(){
     searchEl.value = "chicken strips, chicken tenders, chicken fingers";
     setQuery(searchEl.value);
+    state.scope = "all";                       // chicken is a menu thing, not a seasonal one
+    document.getElementById("scopePick").value = "all";
     setMode("explore");
     var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     document.querySelector(".searchbox").scrollIntoView({ behavior: reduce ? "auto" : "smooth", block:"start" });
